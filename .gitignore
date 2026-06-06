@@ -1,0 +1,15 @@
+node_modules/
+.shadow-cljs/
+out/
+public/js/
+public/css/
+.DS_Store
+.cpcache/
+.clj-kondo/.cache/
+.lsp/
+.vercel
+.claude/
+ralph/
+docs/agents/
+CLAUDE.md
+.env*.local

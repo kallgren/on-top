@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.done.outputs.ok }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: DeLaGuardo/setup-clojure@13.6.0
+        with:
+          cli: latest
+          clj-kondo: latest
+
+      - name: Cache cljs/maven
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.m2
+            ~/.gitlibs
+            .shadow-cljs
+          key: ${{ runner.os }}-cljs-${{ hashFiles('deps.edn', 'shadow-cljs.edn') }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: clj-kondo --lint src test
+
+      - name: Format check
+        run: clojure -M:cljfmt check
+
+      - name: Test
+        run: pnpm test
+
+      - name: Release build
+        run: pnpm build
+
+      - id: done
+        run: echo "ok=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: check
+    if: needs.check.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: DeLaGuardo/setup-clojure@13.6.0
+        with:
+          cli: latest
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Pull Vercel env
+        run: pnpm dlx vercel@latest pull --yes
+          --environment=${{ github.event_name == 'push' && 'production' || 'preview' }}
+          --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build (cljs + css)
+        run: pnpm build
+
+      - name: Build Vercel artifact
+        run: pnpm dlx vercel@latest build
+          ${{ github.event_name == 'push' && '--prod' || '' }}
+          --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: pnpm dlx vercel@latest deploy --prebuilt
+          ${{ github.event_name == 'push' && '--prod' || '' }}
+          --token=${{ secrets.VERCEL_TOKEN }}
