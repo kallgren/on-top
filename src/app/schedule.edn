@@ -1,0 +1,31 @@
+;; On Top — the Core routine schedule.
+;;
+;; Two-week cycle keyed by category (:digital / :household), then by ISO
+;; week-number parity (:week-odd / :week-even), then by weekday.
+;; Empty/missing days default to no tasks. A task name is unique within a day.
+;; Weekly tasks are duplicated across both weeks (no shared :weekly section).
+{:digital
+ {:week-odd
+  {:monday    ["Gmail"]
+   :tuesday   ["Todoist inbox"]
+   :wednesday ["Downloads" "Desktop"]
+   :thursday  ["Gmail"]
+   :sunday    ["Calendar (2w/4w)" "Waiting for & Package tracking"]}
+
+  :week-even
+  {:monday    ["Gmail"]
+   :tuesday   ["Physical inbox"]
+   :wednesday ["Photo inbox" "Screenshots"]
+   :thursday  ["Gmail"]
+   :friday    ["Flytta flikar från telefon"]
+   :sunday    ["Calendar (2w/4w)" "Waiting for & Package tracking"]}}
+
+ :household
+ {:week-odd
+  {:monday    ["Badrum"]
+   :thursday  ["Dammtorka"]
+   :sunday    ["Badlakan"]}
+
+  :week-even
+  {:wednesday ["Dammsug"]
+   :sunday    ["Badlakan"]}}}

@@ -1,1 +1,28 @@
 @import "tailwindcss";
+
+@theme {
+  --color-page: #e8e1d1;          /* warm beige page */
+  --color-surface: #eee8da;       /* button face */
+  --color-surface-hover: #fdfbf6; /* near-white hover */
+  --color-edge: #c6bba0;          /* button border (resting) */
+  --color-done: #2e7d32;          /* whole button when checked */
+  --color-label: #36322a;         /* task label */
+  --color-heading: #9b8f73;       /* category headings */
+  --color-muted: #9a917b;         /* de-emphasised text: wordmark, date, empty state */
+  --color-cue: #1a1712;           /* scroll-down chevron */
+}
+
+@layer base {
+  body {
+    background: var(--color-page);
+    color: var(--color-label);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .text-label-fluid { font-size: clamp(1.05rem, 7.5cqi, 2.1rem); }
+  .text-check-fluid { font-size: clamp(2.25rem, 26cqi, 4.75rem); }
+  .text-inset { text-shadow: 0 1px 1px rgba(255,255,255,0.7), 0 -1px 1px rgba(0,0,0,0.06); }
+}
