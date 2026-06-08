@@ -1,6 +1,7 @@
 (ns app.core
   (:require [uix.core :refer [defui $ use-state use-effect]]
             [uix.dom]
+            [app.storage :as storage]
             [app.utils :refer [weekday-kw week-parity]])
   (:require-macros [app.schedule :refer [load-schedule]]))
 
@@ -75,12 +76,16 @@
                          :on-toggle toggle})))))
 
 (defui app []
-  (let [[done set-done] (use-state #{})
+  (let [today (js/Date.)
+        stamp (storage/day-stamp today)
+        [done set-done] (use-state #(or (storage/read-done stamp) #{}))
         [more? set-more?] (use-state false)
-        today (js/Date.)
         by-category (group-by :category (tasks-for today))
         toggle (fn [name]
                  (set-done #(if (contains? % name) (disj % name) (conj % name))))]
+    (use-effect
+     (fn [] (storage/write-done! stamp done))
+     [stamp done])
     (use-effect
      (fn []
        (let [doc (.-documentElement js/document)
