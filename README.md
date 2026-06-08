@@ -1,4 +1,4 @@
-# On Top
+# OnTop
 
 Keep track of your daily routines.
 

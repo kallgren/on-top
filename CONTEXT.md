@@ -1,4 +1,4 @@
-# On Top
+# OnTop
 
 A calm daily check-off surface for a personal routine system: each day shows the household and digital chores due, and tapping marks them done. This glossary fixes the language the code and docs should use.
 

@@ -1,6 +1,6 @@
 {
-  "name": "On Top",
-  "short_name": "On Top",
+  "name": "OnTop",
+  "short_name": "OnTop",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
