@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `pwa:` applies only when launched as an installed standalone app. */
+@custom-variant pwa (@media (display-mode: standalone));
+
 @theme {
   --color-page: #e8e1d1;          /* warm beige page */
   --color-surface: #eee8da;       /* button face */
