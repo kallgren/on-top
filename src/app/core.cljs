@@ -2,6 +2,7 @@
   (:require [uix.core :refer [defui $ use-state use-effect]]
             [uix.dom]
             [app.storage :as storage]
+            [app.timer :refer [timer]]
             [app.utils :refer [weekday-kw week-parity]])
   (:require-macros [app.schedule :refer [load-schedule]]))
 
@@ -107,7 +108,8 @@
              (if (empty? by-category)
                ($ empty-state)
                ($ task-list {:by-category by-category :done done :toggle toggle}))))
-       ($ scroll-cue {:show? more?}))))
+       ($ scroll-cue {:show? more?})
+       ($ timer))))
 
 (defonce root
   (uix.dom/create-root (js/document.getElementById "app")))
