@@ -1,23 +1,24 @@
 (ns app.core
   (:require [uix.core :refer [defui $ use-state use-effect]]
             [uix.dom]
+            [app.schedule :as sched]
             [app.storage :as storage]
             [app.timer :refer [timer]]
             [app.utils :refer [weekday-kw week-parity]])
-  (:require-macros [app.schedule :refer [load-schedule]]))
+  (:require-macros [app.seed :refer [load-seed]]))
 
-(def routine (load-schedule))
+(def seed-schedule (load-seed))
 
 (def category-order [:digital :household])
 
 (defn category-label [cat]
   (case cat :household "Household" :digital "Digital"))
 
-(defn tasks-for [date]
+(defn tasks-for [schedule date]
   (let [parity (week-parity date)
         wd     (weekday-kw (.getDay date))]
     (for [cat  category-order
-          name (get-in routine [cat parity wd])]
+          name (get-in schedule [cat parity wd])]
       {:category cat :name name})))
 
 (defn today-parts [date]
@@ -81,12 +82,24 @@
         stamp (storage/day-stamp today)
         [done set-done] (use-state #(or (storage/read-done stamp) #{}))
         [more? set-more?] (use-state false)
-        by-category (group-by :category (tasks-for today))
+        [schedule set-schedule!] (use-state #(sched/resolve-schedule
+                                              (sched/parse-schedule (storage/read-schedule-cache))
+                                              seed-schedule))
+        by-category (group-by :category (tasks-for schedule today))
         toggle (fn [name]
                  (set-done #(if (contains? % name) (disj % name) (conj % name))))]
     (use-effect
      (fn [] (storage/write-done! stamp done))
      [stamp done])
+    (use-effect
+     (fn []
+       (when-let [url (not-empty (storage/read-schedule-url))]
+         (sched/fetch-schedule! url
+                                (fn [raw parsed]
+                                  (storage/write-schedule-cache! raw)
+                                  (set-schedule! parsed))))
+       js/undefined)
+     [])
     (use-effect
      (fn []
        (let [doc (.-documentElement js/document)
