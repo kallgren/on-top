@@ -1,5 +1,5 @@
 (ns app.core
-  (:require [uix.core :refer [defui $ use-state use-effect]]
+  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [uix.dom]
             [app.schedule :as sched]
             [app.storage :as storage]
@@ -77,20 +77,10 @@
                          :done? (contains? done name)
                          :on-toggle toggle})))))
 
-(defui app []
-  (let [today (js/Date.)
-        stamp (storage/day-stamp today)
-        [done set-done] (use-state #(or (storage/read-done stamp) #{}))
-        [more? set-more?] (use-state false)
-        [schedule set-schedule!] (use-state #(sched/resolve-schedule
+(defhook use-schedule []
+  (let [[schedule set-schedule!] (use-state #(sched/resolve-schedule
                                               (sched/parse-schedule (storage/read-schedule-cache))
-                                              seed-schedule))
-        by-category (group-by :category (tasks-for schedule today))
-        toggle (fn [name]
-                 (set-done #(if (contains? % name) (disj % name) (conj % name))))]
-    (use-effect
-     (fn [] (storage/write-done! stamp done))
-     [stamp done])
+                                              seed-schedule))]
     (use-effect
      (fn []
        (when-let [url (not-empty (storage/read-schedule-url))]
@@ -100,6 +90,18 @@
                                   (set-schedule! parsed))))
        js/undefined)
      [])
+    schedule))
+
+(defhook use-done [stamp]
+  (let [[done set-done] (use-state #(or (storage/read-done stamp) #{}))]
+    (use-effect
+     (fn [] (storage/write-done! stamp done))
+     [stamp done])
+    [done (fn [name]
+            (set-done #(if (contains? % name) (disj % name) (conj % name))))]))
+
+(defhook use-overflow? []
+  (let [[more? set-more?] (use-state false)]
     (use-effect
      (fn []
        (let [doc (.-documentElement js/document)
@@ -114,6 +116,15 @@
          #(do (.removeEventListener js/window "scroll" update!)
               (.removeEventListener js/window "resize" update!))))
      [])
+    more?))
+
+(defui app []
+  (let [today (js/Date.)
+        stamp (storage/day-stamp today)
+        [done toggle] (use-done stamp)
+        schedule (use-schedule)
+        more? (use-overflow?)
+        by-category (group-by :category (tasks-for schedule today))]
     ($ :div {:class "px-7 pt-12 pb-16"}
        ($ :div {:class "mx-auto w-full max-w-md"}
           ($ screen-header {:date today})
