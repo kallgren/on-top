@@ -7,9 +7,13 @@
             [app.utils :refer [weekday-kw week-parity]])
   (:require-macros [app.seed :refer [load-seed]]))
 
+;; ── Setup ────────────────────────────────────────────────────────────────────
+
 (def seed-schedule (load-seed))
 
 (def category-order [:digital :household])
+
+;; ── Helpers ──────────────────────────────────────────────────────────────────
 
 (defn category-label [cat]
   (case cat :household "Household" :digital "Digital"))
@@ -21,9 +25,7 @@
           name (get-in schedule [cat parity wd])]
       {:category cat :name name})))
 
-(defn today-parts [date]
-  [(.toLocaleDateString date "en-US" #js {:weekday "long"})
-   (.toLocaleDateString date "en-US" #js {:month "long" :day "numeric"})])
+;; ── Components ───────────────────────────────────────────────────────────────
 
 (defui task-button [{:keys [name done? on-toggle]}]
   ($ :button
@@ -42,14 +44,6 @@
           "✓")
        ($ :span {:class "font-bold text-label text-center text-label-fluid"}
           name))))
-
-(defui screen-header [{:keys [date]}]
-  (let [[wd md] (today-parts date)]
-    ($ :header {:class "mb-8 flex flex-col items-center gap-1.5 text-center"}
-       ($ :div {:class "pwa:hidden text-[34px] font-extrabold uppercase leading-none tracking-[0.28em] pl-[0.28em] text-muted text-inset"}
-          "On Top")
-       ($ :div {:class "text-[19px] font-medium tracking-wide text-muted"}
-          (str wd " · " md)))))
 
 (defui scroll-cue [{:keys [show?]}]
   (when show?
@@ -76,6 +70,8 @@
          ($ task-button {:key name :name name
                          :done? (contains? done name)
                          :on-toggle toggle})))))
+
+;; ── Hooks ────────────────────────────────────────────────────────────────────
 
 (defhook use-schedule []
   (let [[schedule set-schedule!] (use-state #(sched/resolve-schedule
@@ -118,6 +114,22 @@
      [])
     more?))
 
+;; ── Header ───────────────────────────────────────────────────────────────────
+
+(defn today-parts [date]
+  [(.toLocaleDateString date "en-US" #js {:weekday "long"})
+   (.toLocaleDateString date "en-US" #js {:month "long" :day "numeric"})])
+
+(defui screen-header [{:keys [date]}]
+  (let [[wd md] (today-parts date)]
+    ($ :header {:class "mb-8 flex flex-col items-center gap-1.5 text-center"}
+       ($ :div {:class "pwa:hidden text-[34px] font-extrabold uppercase leading-none tracking-[0.28em] pl-[0.28em] text-muted text-inset"}
+          "On Top")
+       ($ :div {:class "text-[19px] font-medium tracking-wide text-muted"}
+          (str wd " · " md)))))
+
+;; ── App ──────────────────────────────────────────────────────────────────────
+
 (defui app []
   (let [today (js/Date.)
         stamp (storage/day-stamp today)
@@ -134,6 +146,8 @@
                ($ task-list {:by-category by-category :done done :toggle toggle}))))
        ($ scroll-cue {:show? more?})
        ($ timer))))
+
+;; ── Mount ────────────────────────────────────────────────────────────────────
 
 (defonce root
   (uix.dom/create-root (js/document.getElementById "app")))
