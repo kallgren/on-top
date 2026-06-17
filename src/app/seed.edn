@@ -6,26 +6,26 @@
 ;; Weekly tasks are duplicated across both weeks (no shared :weekly section).
 {:digital
  {:week-odd
-  {:monday    ["Gmail"]
+  {:monday    ["Gmail inbox"]
    :tuesday   ["Todoist inbox"]
-   :wednesday ["Downloads" "Desktop"]
-   :thursday  ["Gmail"]
-   :sunday    ["Calendar (2w/4w)" "Waiting for & Package tracking"]}
+   :wednesday ["Clean Downloads folder" "Clean Desktop folder"]
+   :thursday  ["Gmail inbox"]
+   :sunday    ["Review calendar (2w back/4w forward)" "Review Waiting for & Package tracking"]}
 
   :week-even
-  {:monday    ["Gmail"]
+  {:monday    ["Gmail inbox"]
    :tuesday   ["Physical inbox"]
-   :wednesday ["Photo inbox" "Screenshots"]
-   :thursday  ["Gmail"]
-   :friday    ["Flytta flikar från telefon"]
-   :sunday    ["Calendar (2w/4w)" "Waiting for & Package tracking"]}}
+   :wednesday ["Photo inbox" "Review recent screenshots"]
+   :thursday  ["Gmail inbox"]
+   :friday    ["Review open tabs on phone"]
+   :sunday    ["Review calendar (2w back/4w forward)" "Review Waiting for & Package tracking"]}}
 
  :household
  {:week-odd
-  {:monday    ["Badrum"]
-   :thursday  ["Dammtorka"]
-   :sunday    ["Badlakan"]}
+  {:monday    ["Bathroom"]
+   :thursday  ["Dust"]
+   :sunday    ["Bath towels"]}
 
   :week-even
-  {:wednesday ["Dammsug"]
-   :sunday    ["Badlakan"]}}}
+  {:wednesday ["Vacuum"]
+   :sunday    ["Bath towels"]}}}

@@ -4,12 +4,13 @@
             [app.schedule :as sched]
             [app.storage :as storage]
             [app.timer :refer [timer]]
-            [app.utils :refer [weekday-kw week-parity]])
-  (:require-macros [app.seed :refer [load-seed]]))
+            [app.utils :refer [weekday-kw week-parity]]
+            [cljs.reader :as reader]
+            [shadow.resource :as rc]))
 
 ;; ── Setup ────────────────────────────────────────────────────────────────────
 
-(def seed-schedule (load-seed))
+(def seed-schedule (reader/read-string (rc/inline "app/seed.edn")))
 
 (def categories
   [[:digital   "Digital"]
