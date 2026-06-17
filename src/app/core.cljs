@@ -11,18 +11,17 @@
 
 (def seed-schedule (load-seed))
 
-(def category-order [:digital :household])
+(def categories
+  [[:digital   "Digital"]
+   [:household "Household"]])
 
 ;; ── Helpers ──────────────────────────────────────────────────────────────────
-
-(defn category-label [cat]
-  (case cat :household "Household" :digital "Digital"))
 
 (defn tasks-for [schedule date]
   (let [parity (week-parity date)
         wd     (weekday-kw (.getDay date))]
-    (for [cat  category-order
-          name (get-in schedule [cat parity wd])]
+    (for [[cat] categories
+          name  (get-in schedule [cat parity wd])]
       {:category cat :name name})))
 
 ;; ── Components ───────────────────────────────────────────────────────────────
@@ -60,12 +59,12 @@
      "You're on top :)"))
 
 (defui task-list [{:keys [by-category done toggle]}]
-  (for [cat category-order
+  (for [[cat label] categories
         :let [ts (by-category cat)]
         :when (seq ts)]
     ($ :section {:key (str cat) :class "contents"}
        ($ :h2 {:class "px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading"}
-          (category-label cat))
+          label)
        (for [{:keys [name]} ts]
          ($ task-button {:key name :name name
                          :done? (contains? done name)
