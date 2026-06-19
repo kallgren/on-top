@@ -1,5 +1,5 @@
 (ns app.core
-  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
+  (:require [uix.core :refer [defui defhook $ use-state use-effect use-effect-event]]
             [uix.dom]
             [app.completions :as completion]
             [app.config :as config]
@@ -85,21 +85,43 @@
 
 (defhook use-completions [today schedule category-keys]
   (let [today-key (dates/iso-date today)
-        [completions set-completions] (use-state #(or (storage/read-completions) {}))]
+        [completions set-completions] (use-state #(or (storage/read-completions) {}))
+        [outbox set-outbox] (use-state #(or (storage/read-outbox) #{}))
+        flush! (fn [completions outbox]
+                 (let [{:keys [completions-db-url supabase-publishable-key]}
+                       (config/parse-config (storage/read-config))]
+                   (when (and (not-empty completions-db-url)
+                              (not-empty supabase-publishable-key)
+                              (seq outbox))
+                     (sync/upsert-completions!
+                      completions-db-url supabase-publishable-key
+                      (sync/flush-payload outbox completions)
+                      #(set-outbox (fn [pending] (sync/clear-pending pending outbox)))))))
+        hydrate! (use-effect-event
+                  (fn []
+                    (let [{:keys [completions-db-url supabase-publishable-key]}
+                          (config/parse-config (storage/read-config))]
+                      (when (and (not-empty completions-db-url) (not-empty supabase-publishable-key))
+                        (sync/fetch-completions! completions-db-url supabase-publishable-key
+                                                 (fn [remote]
+                                                   (set-completions (sync/reconcile remote (select-keys completions outbox)))))
+                        (flush! completions outbox)))))]
     (use-effect
      (fn [] (storage/write-completions! completions))
      [completions])
     (use-effect
-     (fn []
-       (let [{:keys [completions-db-url supabase-publishable-key]}
-             (config/parse-config (storage/read-config))]
-         (when (and (not-empty completions-db-url) (not-empty supabase-publishable-key))
-           (sync/fetch-completions! completions-db-url supabase-publishable-key
-                                    (fn [remote] (set-completions (sync/reconcile remote {}))))))
-       js/undefined)
+     (fn [] (storage/write-outbox! outbox))
+     [outbox])
+    (use-effect
+     (fn [] (hydrate!) js/undefined)
      [today])
     [(fn [id] (completion/covered? completions id today-key))
-     (fn [id] (set-completions #(completion/toggle % schedule category-keys today id)))]))
+     (fn [id]
+       (let [next-completions (completion/toggle completions schedule category-keys today id)
+             next-outbox      (sync/mark-dirty outbox id)]
+         (set-completions next-completions)
+         (set-outbox next-outbox)
+         (flush! next-completions next-outbox)))]))
 
 (defhook use-today []
   (let [[today set-today!] (use-state #(js/Date.))]

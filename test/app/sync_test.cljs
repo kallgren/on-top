@@ -43,3 +43,19 @@
 
 (deftest parse-completions-of-nil-is-nil
   (is (nil? (sync/parse-completions nil))))
+
+(deftest mark-dirty-adds-a-toggled-id-to-the-outbox
+  (is (= #{"gmail"} (sync/mark-dirty #{} "gmail")))
+  (is (= #{"gmail" "dishes"} (sync/mark-dirty #{"gmail"} "dishes"))))
+
+(deftest flush-payload-builds-an-upsert-row-per-dirty-id
+  (is (= #{{"task_id" "gmail" "done_through" "2026-06-18"}
+           {"task_id" "dishes" "done_through" "2026-06-17"}}
+         (set (sync/flush-payload #{"gmail" "dishes"}
+                                  {"gmail" "2026-06-18" "dishes" "2026-06-17" "trash" "2026-06-10"})))))
+
+(deftest clear-pending-drops-confirmed-ids
+  (is (= #{} (sync/clear-pending #{"gmail" "dishes"} #{"gmail" "dishes"}))))
+
+(deftest clear-pending-keeps-ids-toggled-again-mid-flight
+  (is (= #{"gmail"} (sync/clear-pending #{"gmail" "dishes"} #{"dishes"}))))
