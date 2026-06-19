@@ -13,11 +13,11 @@ The kind of a task. Exactly two exist: `:household` and `:digital`. Fixed, not u
 _Avoid_: section, group, type
 
 **Completion**:
-A task being done *today*: the derived view that its **Done through** date covers today (`today ≤ done-through`). A view computed for display, not a stored record — the stored datum is **Done through**. Identified by the task's id, not its display text.
+A task having been done, identified by the task's id (not its display text). Recorded as a single **Done through** date per task, and surfaced for display as "done today" when that date covers today (`today ≤ done-through`). One record each — bounded by task count, not days — surviving the date rollover.
 _Avoid_: check, status, state, progress
 
 **Done through**:
-The date up to and including which a task is considered done — forward-looking *coverage*, not a backward "last done". Stored per task, one record each, surviving the date rollover (so storage is bounded by task count, never by days). A daily task marked done is done through today and so reads as not-done tomorrow. Unmarking rolls the date back to the task's previous scheduled occurrence rather than clearing it, so coverage slides between occurrences.
+The date a **Completion** is recorded against: the day up to and including which a task is considered done — forward-looking *coverage*, not a backward "last done". A daily task marked done is done through today and so reads as not-done tomorrow. Unmarking rolls the date back to the task's previous scheduled occurrence rather than clearing it, so coverage slides between occurrences.
 _Avoid_: last completion, last done, due date, expiry
 
 **Core tasks**:

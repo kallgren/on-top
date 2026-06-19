@@ -1,7 +1,7 @@
 (ns app.core
   (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [uix.dom]
-            [app.done :as done]
+            [app.completions :as completion]
             [app.schedule :as sched]
             [app.storage :as storage]
             [app.tasks :as tasks]
@@ -81,14 +81,14 @@
      [])
     schedule))
 
-(defhook use-done [today schedule category-keys]
+(defhook use-completions [today schedule category-keys]
   (let [today-key (utils/iso-date today)
-        [done set-done] (use-state #(or (storage/read-done) {}))]
+        [completions set-completions] (use-state #(or (storage/read-completions) {}))]
     (use-effect
-     (fn [] (storage/write-done! done))
-     [done])
-    [(fn [id] (done/covered? done id today-key))
-     (fn [id] (set-done #(done/toggle % schedule category-keys today id)))]))
+     (fn [] (storage/write-completions! completions))
+     [completions])
+    [(fn [id] (completion/covered? completions id today-key))
+     (fn [id] (set-completions #(completion/toggle % schedule category-keys today id)))]))
 
 (defhook use-today []
   (let [[today set-today!] (use-state #(js/Date.))]
@@ -138,7 +138,7 @@
 
 (defui day-view [{:keys [today schedule]}]
   (let [category-keys (map first categories)
-        [done? toggle] (use-done today schedule category-keys)
+        [done? toggle] (use-completions today schedule category-keys)
         more? (use-overflow?)
         by-category (group-by :category (tasks/tasks-for schedule today category-keys))]
     ($ :<>

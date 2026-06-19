@@ -1,12 +1,12 @@
 (ns app.storage)
 
-(def storage-key "on-top/done")
+(def completions-key "on-top/completions")
 (def schedule-url-key "on-top/schedule-url")
 (def schedule-cache-key "on-top/schedule-cache")
 
-(defn read-done []
+(defn read-completions []
   (try
-    (when-let [raw (.getItem js/localStorage storage-key)]
+    (when-let [raw (.getItem js/localStorage completions-key)]
       (let [data (js/JSON.parse raw)]
         (into {} (for [k    (js/Object.keys data)
                        :let [v (aget data k)]
@@ -14,9 +14,9 @@
                    [k v]))))
     (catch :default _ nil)))
 
-(defn write-done! [done]
+(defn write-completions! [completions]
   (try
-    (.setItem js/localStorage storage-key (js/JSON.stringify (clj->js done)))
+    (.setItem js/localStorage completions-key (js/JSON.stringify (clj->js completions)))
     (catch :default _ nil)))
 
 (defn read-schedule-url []
