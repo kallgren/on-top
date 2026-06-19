@@ -3,12 +3,12 @@
             [app.config :as config]))
 
 (deftest parse-config-reads-a-full-blob
-  (is (= {:completions-db-url "https://x.supabase.co/rest/v1/completions"
-          :supabase-anon-key  "anon"
-          :schedule-url       "https://gist.example/raw"}
+  (is (= {:completions-db-url       "https://x.supabase.co/rest/v1/completions"
+          :supabase-publishable-key "sb_publishable_x"
+          :schedule-url             "https://gist.example/raw"}
          (config/parse-config
           (str "{\"completionsDbUrl\": \"https://x.supabase.co/rest/v1/completions\", "
-               "\"supabaseAnonKey\": \"anon\", "
+               "\"supabasePublishableKey\": \"sb_publishable_x\", "
                "\"scheduleUrl\": \"https://gist.example/raw\"}")))))
 
 (deftest parse-config-maps-completions-db-url
@@ -16,9 +16,9 @@
          (config/parse-config
           "{\"completionsDbUrl\": \"https://x.supabase.co/rest/v1/completions\"}"))))
 
-(deftest parse-config-maps-supabase-anon-key
-  (is (= {:supabase-anon-key "anon"}
-         (config/parse-config "{\"supabaseAnonKey\": \"anon\"}"))))
+(deftest parse-config-maps-supabase-publishable-key
+  (is (= {:supabase-publishable-key "sb_publishable_x"}
+         (config/parse-config "{\"supabasePublishableKey\": \"sb_publishable_x\"}"))))
 
 (deftest parse-config-maps-schedule-url
   (is (= {:schedule-url "https://gist.example/raw"}

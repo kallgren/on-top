@@ -6,6 +6,7 @@
             [app.date-utils :as dates]
             [app.schedule :as sched]
             [app.storage :as storage]
+            [app.sync :as sync]
             [app.tasks :as tasks]
             [app.timer :refer [timer]]
             [cljs.reader :as reader]
@@ -88,6 +89,15 @@
     (use-effect
      (fn [] (storage/write-completions! completions))
      [completions])
+    (use-effect
+     (fn []
+       (let [{:keys [completions-db-url supabase-publishable-key]}
+             (config/parse-config (storage/read-config))]
+         (when (and (not-empty completions-db-url) (not-empty supabase-publishable-key))
+           (sync/fetch-completions! completions-db-url supabase-publishable-key
+                                    (fn [remote] (set-completions (sync/reconcile remote {}))))))
+       js/undefined)
+     [today])
     [(fn [id] (completion/covered? completions id today-key))
      (fn [id] (set-completions #(completion/toggle % schedule category-keys today id)))]))
 
