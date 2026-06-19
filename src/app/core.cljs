@@ -2,11 +2,11 @@
   (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [uix.dom]
             [app.completions :as completion]
+            [app.date-utils :as dates]
             [app.schedule :as sched]
             [app.storage :as storage]
             [app.tasks :as tasks]
             [app.timer :refer [timer]]
-            [app.utils :as utils]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -82,7 +82,7 @@
     schedule))
 
 (defhook use-completions [today schedule category-keys]
-  (let [today-key (utils/iso-date today)
+  (let [today-key (dates/iso-date today)
         [completions set-completions] (use-state #(or (storage/read-completions) {}))]
     (use-effect
      (fn [] (storage/write-completions! completions))
@@ -154,7 +154,7 @@
   (let [today (use-today)
         schedule (use-schedule)]
     ($ :div {:class "px-7 pt-12 pb-16"}
-       ($ day-view {:key (utils/iso-date today) :today today :schedule schedule})
+       ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})
        ($ timer))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────

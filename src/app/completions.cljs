@@ -1,6 +1,6 @@
 (ns app.completions
   (:require [app.tasks :as tasks]
-            [app.utils :refer [iso-date]]))
+            [app.date-utils :refer [iso-date]]))
 
 (defn covered? [completions id today]
   (when-let [through (get completions id)]

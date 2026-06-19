@@ -1,4 +1,4 @@
-(ns app.utils)
+(ns app.date-utils)
 
 (def weekday-kw [:sunday :monday :tuesday :wednesday :thursday :friday :saturday])
 

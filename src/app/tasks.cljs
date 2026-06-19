@@ -1,5 +1,5 @@
 (ns app.tasks
-  (:require [app.utils :refer [iso-date weekday-kw week-parity]]))
+  (:require [app.date-utils :refer [iso-date weekday-kw week-parity]]))
 
 (defn tasks-for [schedule date category-keys]
   (let [parity (week-parity date)
