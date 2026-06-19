@@ -2,7 +2,10 @@
 
 (def weekday-kw [:sunday :monday :tuesday :wednesday :thursday :friday :saturday])
 
-(defn iso-week [date]
+(defn iso-date [date]
+  (.toLocaleDateString date "en-CA"))   ; YYYY-MM-DD, local (not UTC)
+
+(defn- iso-week [date]
   (let [d   (js/Date. (js/Date.UTC (.getFullYear date) (.getMonth date) (.getDate date)))
         day (let [g (.getUTCDay d)] (if (zero? g) 7 g))]
     (.setUTCDate d (+ (.getUTCDate d) (- 4 day)))      ; Thursday of this week

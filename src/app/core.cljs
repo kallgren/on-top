@@ -3,8 +3,9 @@
             [uix.dom]
             [app.schedule :as sched]
             [app.storage :as storage]
+            [app.tasks :as tasks]
             [app.timer :refer [timer]]
-            [app.utils :refer [weekday-kw week-parity]]
+            [app.utils :as utils]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -15,15 +16,6 @@
 (def categories
   [[:digital   "Digital"]
    [:household "Household"]])
-
-;; ── Helpers ──────────────────────────────────────────────────────────────────
-
-(defn tasks-for [schedule date]
-  (let [parity (week-parity date)
-        wd     (weekday-kw (.getDay date))]
-    (for [[cat] categories
-          name  (get-in schedule [cat parity wd])]
-      {:category cat :name name})))
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
@@ -88,13 +80,25 @@
      [])
     schedule))
 
-(defhook use-done [stamp]
-  (let [[done set-done] (use-state #(or (storage/read-done stamp) #{}))]
+(defhook use-done [date-key]
+  (let [[done set-done] (use-state #(or (storage/read-done date-key) #{}))]
     (use-effect
-     (fn [] (storage/write-done! stamp done))
-     [stamp done])
+     (fn [] (storage/write-done! date-key done))
+     [date-key done])
     [done (fn [name]
             (set-done #(if (contains? % name) (disj % name) (conj % name))))]))
+
+(defhook use-today []
+  (let [[today set-today!] (use-state #(js/Date.))]
+    (use-effect
+     (fn []
+       (let [on-visible (fn []
+                          (when (= "visible" (.-visibilityState js/document))
+                            (set-today! (js/Date.))))]
+         (.addEventListener js/document "visibilitychange" on-visible)
+         #(.removeEventListener js/document "visibilitychange" on-visible)))
+     [])
+    today))
 
 (defhook use-overflow? []
   (let [[more? set-more?] (use-state false)]
@@ -130,21 +134,25 @@
 
 ;; ── App ──────────────────────────────────────────────────────────────────────
 
-(defui app []
-  (let [today (js/Date.)
-        stamp (storage/day-stamp today)
-        [done toggle] (use-done stamp)
-        schedule (use-schedule)
+(defui day-view [{:keys [today schedule]}]
+  (let [[done toggle] (use-done (utils/iso-date today))
         more? (use-overflow?)
-        by-category (group-by :category (tasks-for schedule today))]
-    ($ :div {:class "px-7 pt-12 pb-16"}
+        by-category (group-by :category
+                              (tasks/tasks-for schedule today (map first categories)))]
+    ($ :<>
        ($ :div {:class "mx-auto w-full max-w-md"}
           ($ screen-header {:date today})
           ($ :div {:class "flex w-full flex-col gap-4 px-1 py-2"}
              (if (empty? by-category)
                ($ empty-state)
                ($ task-list {:by-category by-category :done done :toggle toggle}))))
-       ($ scroll-cue {:show? more?})
+       ($ scroll-cue {:show? more?}))))
+
+(defui app []
+  (let [today (use-today)
+        schedule (use-schedule)]
+    ($ :div {:class "px-7 pt-12 pb-16"}
+       ($ day-view {:key (utils/iso-date today) :today today :schedule schedule})
        ($ timer))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
