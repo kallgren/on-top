@@ -1,6 +1,7 @@
 (ns app.core
   (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [uix.dom]
+            [app.done :as done]
             [app.schedule :as sched]
             [app.storage :as storage]
             [app.tasks :as tasks]
@@ -19,11 +20,11 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-(defui task-button [{:keys [name done? on-toggle]}]
+(defui task-button [{:keys [id text done? on-toggle]}]
   ($ :button
-     {:on-click #(on-toggle name)
+     {:on-click #(on-toggle id)
       :aria-pressed done?
-      :aria-label name
+      :aria-label text
       :class (str "flex aspect-[2/1] w-full items-center justify-center "
                   "overflow-hidden rounded-2xl border-2 px-6 "
                   "cursor-pointer select-none touch-manipulation active:scale-[0.98] "
@@ -35,7 +36,7 @@
        ($ :span {:class "font-bold leading-none text-white text-check-fluid"}
           "✓")
        ($ :span {:class "font-bold text-label text-center text-label-fluid"}
-          name))))
+          text))))
 
 (defui scroll-cue [{:keys [show?]}]
   (when show?
@@ -51,16 +52,16 @@
   ($ :p {:class "py-20 text-center text-[17px] font-medium italic text-muted tracking-wide text-inset"}
      "You're on top :)"))
 
-(defui task-list [{:keys [by-category done toggle]}]
+(defui task-list [{:keys [by-category done? toggle]}]
   (for [[cat label] categories
         :let [ts (by-category cat)]
         :when (seq ts)]
     ($ :section {:key (str cat) :class "contents"}
        ($ :h2 {:class "px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading"}
           label)
-       (for [{:keys [name]} ts]
-         ($ task-button {:key name :name name
-                         :done? (contains? done name)
+       (for [{:keys [id text]} ts]
+         ($ task-button {:key id :id id :text text
+                         :done? (done? id)
                          :on-toggle toggle})))))
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
@@ -80,13 +81,14 @@
      [])
     schedule))
 
-(defhook use-done [date-key]
-  (let [[done set-done] (use-state #(or (storage/read-done date-key) #{}))]
+(defhook use-done [today schedule category-keys]
+  (let [today-key (utils/iso-date today)
+        [done set-done] (use-state #(or (storage/read-done) {}))]
     (use-effect
-     (fn [] (storage/write-done! date-key done))
-     [date-key done])
-    [done (fn [name]
-            (set-done #(if (contains? % name) (disj % name) (conj % name))))]))
+     (fn [] (storage/write-done! done))
+     [done])
+    [(fn [id] (done/covered? done id today-key))
+     (fn [id] (set-done #(done/toggle % schedule category-keys today id)))]))
 
 (defhook use-today []
   (let [[today set-today!] (use-state #(js/Date.))]
@@ -135,17 +137,17 @@
 ;; ── App ──────────────────────────────────────────────────────────────────────
 
 (defui day-view [{:keys [today schedule]}]
-  (let [[done toggle] (use-done (utils/iso-date today))
+  (let [category-keys (map first categories)
+        [done? toggle] (use-done today schedule category-keys)
         more? (use-overflow?)
-        by-category (group-by :category
-                              (tasks/tasks-for schedule today (map first categories)))]
+        by-category (group-by :category (tasks/tasks-for schedule today category-keys))]
     ($ :<>
        ($ :div {:class "mx-auto w-full max-w-md"}
           ($ screen-header {:date today})
           ($ :div {:class "flex w-full flex-col gap-4 px-1 py-2"}
              (if (empty? by-category)
                ($ empty-state)
-               ($ task-list {:by-category by-category :done done :toggle toggle}))))
+               ($ task-list {:by-category by-category :done? done? :toggle toggle}))))
        ($ scroll-cue {:show? more?}))))
 
 (defui app []

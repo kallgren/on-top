@@ -4,18 +4,19 @@
 (def schedule-url-key "on-top/schedule-url")
 (def schedule-cache-key "on-top/schedule-cache")
 
-(defn read-done [date-key]
+(defn read-done []
   (try
     (when-let [raw (.getItem js/localStorage storage-key)]
       (let [data (js/JSON.parse raw)]
-        (when (= (.-date data) date-key)
-          (set (.-names data)))))
+        (into {} (for [k    (js/Object.keys data)
+                       :let [v (aget data k)]
+                       :when (string? v)]
+                   [k v]))))
     (catch :default _ nil)))
 
-(defn write-done! [date-key names]
+(defn write-done! [done]
   (try
-    (.setItem js/localStorage storage-key
-              (js/JSON.stringify #js {:date date-key :names (clj->js (vec names))}))
+    (.setItem js/localStorage storage-key (js/JSON.stringify (clj->js done)))
     (catch :default _ nil)))
 
 (defn read-schedule-url []
