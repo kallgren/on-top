@@ -2,6 +2,7 @@
   (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [uix.dom]
             [app.completions :as completion]
+            [app.config :as config]
             [app.date-utils :as dates]
             [app.schedule :as sched]
             [app.storage :as storage]
@@ -72,7 +73,7 @@
                                               seed-schedule))]
     (use-effect
      (fn []
-       (when-let [url (not-empty (storage/read-schedule-url))]
+       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
          (sched/fetch-schedule! url
                                 (fn [raw parsed]
                                   (storage/write-schedule-cache! raw)
