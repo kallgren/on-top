@@ -10,9 +10,14 @@ details.
 
 ## Surfaces
 
-The two surfaces are distinguished by **posture** — the relationship you have to
-the work — not by how often a task recurs. ("Core" and "Rare" are working names;
-the distinction is posture, not frequency.)
+**Surface**:
+One of the two self-contained halves the product presents — **Core** or **Rare**.
+Each was once a standalone app; now each is a bounded context with its own
+**Schedule**, view, and completion store, sharing the kernel language below. The
+two are distinguished by **posture** — the relationship you have to the work —
+not by how often a task recurs. ("Core" and "Rare" are working names; the
+distinction is posture, not frequency.)
+_Avoid_: app, view, tab, mode, pane, screen
 
 **Core** — _posture: today._
 The areas where things pile up: inboxes, files, photos. You've committed to a
