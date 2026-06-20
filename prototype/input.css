@@ -1,0 +1,56 @@
+/* PROTOTYPE input — compiled by the project's own Tailwind CLI into main.css.
+   Theme tokens merged from on-top + routine main.css. Throwaway. */
+@import "tailwindcss";
+@source "./merged-shell.html";
+
+@custom-variant pwa (@media (display-mode: standalone));
+
+@theme {
+  --breakpoint-wide:    1200px;
+  --color-page:         #e8e1d1;
+  --color-surface:      #eee8da;
+  --color-surface-hover:#fdfbf6;
+  --color-edge:         #c6bba0;
+  --color-done:         #2e7d32;
+  --color-label:        #36322a;
+  --color-heading:      #9b8f73;
+  --color-muted:        #9a917b;
+  --color-cue:          #1a1712;
+  --color-badge:        #b8ab92;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-page:         #0f1828;
+    --color-surface:      #1c2942;
+    --color-surface-hover:#253554;
+    --color-edge:         #324063;
+    --color-done:         #35b06a;
+    --color-label:        #e9eefa;
+    --color-heading:      #7e8caa;
+    --color-muted:        #6e7c98;
+    --color-cue:          #c4cfe3;
+    --color-badge:        #4a5a7a;
+  }
+}
+
+@layer base {
+  body {
+    background: var(--color-page);
+    color: var(--color-label);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .text-label-fluid { font-size: clamp(1.05rem, 7.5cqi, 2.1rem); }
+  .text-check-fluid { font-size: clamp(2.25rem, 26cqi, 4.75rem); }
+  .text-inset { text-shadow: 0 1px 1px rgba(255,255,255,0.7), 0 -1px 1px rgba(0,0,0,0.06); }
+}
+
+@media (prefers-color-scheme: dark) {
+  @layer utilities {
+    .text-inset { text-shadow: 0 1px 1px rgba(0,0,0,0.55), 0 -1px 1px rgba(255,255,255,0.07); }
+  }
+}

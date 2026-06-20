@@ -1,0 +1,243 @@
+<!doctype html>
+<!--
+  PROTOTYPE — throwaway. Delete once the merged shell is decided.
+
+  Question: how does the two-surface merge feel as one view?
+    - one header on top
+    - wide (>=1200px): Core left, Rare right, side by side
+    - narrow: one surface at a time, native momentum swipe, 2-dot indicator
+
+  Static content, no real functionality (Core buttons toggle for feel only).
+  Markup + classes copied verbatim from on-top/src/app/core.cljs (Core) and
+  routine/src/app/core.cljs (Rare) so the look matches the real apps. Styled by
+  the Tailwind browser engine + the shared @theme tokens — no build step.
+
+  Run:  open prototype/merged-shell.html
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>On Top — merged shell prototype</title>
+    <!-- compiled by the project's own Tailwind CLI: see prototype/input.css -->
+    <link rel="stylesheet" href="main.css" />
+    <style>
+      .no-scrollbar { scrollbar-width: none; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+  </head>
+
+  <body>
+    <div class="px-7 pt-12 pb-10">
+
+      <!-- ── One header for the whole product ───────────────────────────── -->
+      <header class="mb-8 flex flex-col items-center gap-1.5 text-center">
+        <div class="pwa:hidden text-[34px] font-extrabold uppercase leading-none tracking-[0.28em] pl-[0.28em] text-muted text-inset">
+          On Top
+        </div>
+        <div class="text-[19px] font-medium tracking-wide text-muted">
+          Saturday · June 20
+        </div>
+      </header>
+
+      <!-- ── Responsive shell: one flex container, both surfaces ────────────
+           narrow  → scroll-snap, full-width panels, momentum swipe
+           wide    → side by side at natural widths (Core left, Rare right) -->
+      <div
+        id="surfaces"
+        class="no-scrollbar flex snap-x snap-mandatory overflow-x-auto
+               wide:snap-none wide:overflow-x-visible">
+
+        <!-- ════ CORE (left) ════ big tap-to-toggle buttons ════════════════ -->
+        <section class="w-full shrink-0 snap-center px-1 wide:flex-1 wide:px-7">
+          <div class="mx-auto w-full max-w-md">
+            <div class="flex w-full flex-col gap-4 px-1 py-2">
+
+              <h2 class="px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading">Digital</h2>
+
+              <button onclick="this.classList.toggle('is-done')" aria-label="Email"
+                class="core-btn group flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-2xl border-2 px-6 cursor-pointer select-none touch-manipulation active:scale-[0.98] transition-colors duration-100 [container-type:inline-size] is-done">
+                <span class="core-check font-bold leading-none text-white text-check-fluid">✓</span>
+                <span class="core-label font-bold text-label text-center text-label-fluid">Email</span>
+              </button>
+
+              <button onclick="this.classList.toggle('is-done')" aria-label="Messages"
+                class="core-btn group flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-2xl border-2 px-6 cursor-pointer select-none touch-manipulation active:scale-[0.98] transition-colors duration-100 [container-type:inline-size]">
+                <span class="core-check font-bold leading-none text-white text-check-fluid">✓</span>
+                <span class="core-label font-bold text-label text-center text-label-fluid">Messages</span>
+              </button>
+
+              <button onclick="this.classList.toggle('is-done')" aria-label="Photos"
+                class="core-btn group flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-2xl border-2 px-6 cursor-pointer select-none touch-manipulation active:scale-[0.98] transition-colors duration-100 [container-type:inline-size]">
+                <span class="core-check font-bold leading-none text-white text-check-fluid">✓</span>
+                <span class="core-label font-bold text-label text-center text-label-fluid">Photos</span>
+              </button>
+
+              <h2 class="px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading">Household</h2>
+
+              <button onclick="this.classList.toggle('is-done')" aria-label="Dishes"
+                class="core-btn group flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-2xl border-2 px-6 cursor-pointer select-none touch-manipulation active:scale-[0.98] transition-colors duration-100 [container-type:inline-size] is-done">
+                <span class="core-check font-bold leading-none text-white text-check-fluid">✓</span>
+                <span class="core-label font-bold text-label text-center text-label-fluid">Dishes</span>
+              </button>
+
+              <button onclick="this.classList.toggle('is-done')" aria-label="Tidy desk"
+                class="core-btn group flex aspect-[2/1] w-full items-center justify-center overflow-hidden rounded-2xl border-2 px-6 cursor-pointer select-none touch-manipulation active:scale-[0.98] transition-colors duration-100 [container-type:inline-size]">
+                <span class="core-check font-bold leading-none text-white text-check-fluid">✓</span>
+                <span class="core-label font-bold text-label text-center text-label-fluid">Tidy desk</span>
+              </button>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ════ RARE (right) ════ maintenance cards ═══════════════════════ -->
+        <section class="w-full shrink-0 snap-center wide:w-[42rem]">
+          <div class="mx-auto w-full max-w-2xl px-7">
+            <div class="flex flex-col gap-4">
+
+              <!-- Digital card -->
+              <div class="pb-3">
+                <div class="rounded-2xl border-2 border-edge bg-surface p-2">
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <span class="text-[20px] font-bold uppercase tracking-[0.2em] text-heading">Digital</span>
+                  </div>
+                  <div class="relative">
+
+                    <!-- Completed fold, expanded -->
+                    <div class="mx-4 my-1 flex items-center gap-3">
+                      <div class="flex-1 border-t border-dashed border-edge"></div>
+                      <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-heading">Completed</span>
+                      <div class="flex-1 border-t border-dashed border-edge"></div>
+                    </div>
+                    <div class="flex flex-col opacity-50 pt-1">
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left hover:bg-page">
+                        <span class="text-[15px] font-medium leading-snug text-label line-through">Clear downloads</span>
+                        <div class="flex-1"></div>
+                        <span class="text-[13px] font-semibold tabular-nums text-muted">Mon Jun 15</span>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">monthly</span>
+                      </button>
+                    </div>
+
+                    <!-- Current -->
+                    <div class="flex flex-col">
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left hover:bg-page">
+                        <span class="text-[15px] font-medium leading-snug text-label">Back up photos</span>
+                        <span class="text-[13px] font-semibold text-muted">3 days ago</span>
+                        <div class="flex-1"></div>
+                        <span class="text-[13px] font-semibold tabular-nums text-muted">Wed Jun 17</span>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">monthly</span>
+                      </button>
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left hover:bg-page">
+                        <span class="text-[15px] font-medium leading-snug text-label">Update passwords</span>
+                        <span class="text-[13px] font-semibold text-muted">Today</span>
+                        <div class="flex-1"></div>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">6 months</span>
+                      </button>
+                    </div>
+
+                    <!-- Upcoming fold, expanded -->
+                    <div class="flex flex-col opacity-50 pb-1">
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left hover:bg-page">
+                        <span class="text-[15px] font-medium leading-snug text-label">Review subscriptions</span>
+                        <span class="text-[13px] font-semibold text-muted">in 12 days</span>
+                        <div class="flex-1"></div>
+                        <span class="text-[13px] font-semibold tabular-nums text-muted">Thu Jul 2</span>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">quarterly</span>
+                      </button>
+                    </div>
+                    <div class="mx-4 my-1 flex items-center gap-3">
+                      <div class="flex-1 border-t border-dashed border-edge"></div>
+                      <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-heading">Upcoming</span>
+                      <div class="flex-1 border-t border-dashed border-edge"></div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- Household card -->
+              <div class="pb-3">
+                <div class="rounded-2xl border-2 border-edge bg-surface p-2">
+                  <div class="flex items-center gap-3 px-4 py-3">
+                    <span class="text-[20px] font-bold uppercase tracking-[0.2em] text-heading">Household</span>
+                  </div>
+                  <div class="relative">
+                    <div class="flex flex-col">
+
+                      <!-- due/missed example -->
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left bg-red-500/8 hover:bg-red-500/14">
+                        <span class="text-[15px] font-medium leading-snug text-label">Descale kettle</span>
+                        <span class="text-[13px] font-semibold text-muted">5 days ago</span>
+                        <span class="rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-red-500/12 text-red-500">2 missed</span>
+                        <div class="flex-1"></div>
+                        <span class="text-[13px] font-semibold tabular-nums text-muted">Mon Jun 15</span>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">2 months</span>
+                      </button>
+
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left hover:bg-page">
+                        <span class="text-[15px] font-medium leading-snug text-label">Deep clean fridge</span>
+                        <span class="text-[13px] font-semibold text-muted">Yesterday</span>
+                        <div class="flex-1"></div>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">monthly</span>
+                      </button>
+
+                      <!-- deadline countdown example -->
+                      <button class="group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer select-none text-left bg-red-500/8 hover:bg-red-500/14">
+                        <span class="text-[15px] font-medium leading-snug text-label">Bookkeeping / taxes</span>
+                        <span class="text-[13px] font-semibold text-muted">in 6 days</span>
+                        <span class="text-[12px] font-semibold uppercase text-red-500">Due in 6 days</span>
+                        <div class="flex-1"></div>
+                        <span class="text-[13px] font-semibold tabular-nums text-muted">Fri Jun 26</span>
+                        <span class="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading">quarterly</span>
+                      </button>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ── Bullet indicator (narrow only) ─────────────────────────────── -->
+      <div id="dots" class="fixed inset-x-0 bottom-0 z-20 flex justify-center gap-2.5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] wide:hidden">
+        <button data-i="0" class="dot h-2.5 w-2.5 rounded-full bg-muted transition-colors"></button>
+        <button data-i="1" class="dot h-2.5 w-2.5 rounded-full bg-edge transition-colors"></button>
+      </div>
+
+    </div>
+
+    <style>
+      /* Core button: show ✓ when done, label otherwise — mirrors the cljs branch */
+      .core-btn { background: var(--color-surface); border-color: var(--color-edge); }
+      .core-btn:hover { background: var(--color-surface-hover); }
+      .core-btn .core-check { display: none; }
+      .core-btn.is-done { background: var(--color-done); border-color: var(--color-done); }
+      .core-btn.is-done:hover { background: var(--color-done); }
+      .core-btn.is-done .core-check { display: inline; }
+      .core-btn.is-done .core-label { display: none; }
+    </style>
+
+    <script>
+      const surfaces = document.getElementById('surfaces');
+      const dots = [...document.querySelectorAll('#dots .dot')];
+
+      function sync() {
+        const i = Math.round(surfaces.scrollLeft / surfaces.clientWidth);
+        dots.forEach((d, n) => {
+          d.classList.toggle('bg-muted', n === i);
+          d.classList.toggle('bg-edge', n !== i);
+        });
+      }
+      surfaces.addEventListener('scroll', sync, { passive: true });
+      dots.forEach(d =>
+        d.addEventListener('click', () =>
+          surfaces.scrollTo({ left: surfaces.clientWidth * +d.dataset.i, behavior: 'smooth' })));
+      sync();
+    </script>
+  </body>
+</html>
