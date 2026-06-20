@@ -2,30 +2,36 @@
 ;;
 ;; Two-week cycle keyed by category (:digital / :household), then by ISO
 ;; week-number parity (:week-odd / :week-even), then by weekday.
-;; Empty/missing days default to no tasks. A task name is unique within a day.
+;; Each task is {:id :text}: :id is the stable identity that done-through history
+;; hangs off, :text is the display label and can be reworded freely.
+;; An :id appears at most once within a day; the same :id recurs across days.
 ;; Weekly tasks are duplicated across both weeks (no shared :weekly section).
 {:digital
  {:week-odd
-  {:monday    ["Gmail inbox"]
-   :tuesday   ["Todoist inbox"]
-   :wednesday ["Clean Downloads folder" "Clean Desktop folder"]
-   :thursday  ["Gmail inbox"]
-   :sunday    ["Review calendar (2w back/4w forward)" "Review Waiting for & Package tracking"]}
+  {:monday    [{:id "gmail" :text "Gmail inbox"}]
+   :tuesday   [{:id "todoist" :text "Todoist inbox"}]
+   :wednesday [{:id "downloads" :text "Clean Downloads folder"}
+               {:id "desktop" :text "Clean Desktop folder"}]
+   :thursday  [{:id "gmail" :text "Gmail inbox"}]
+   :sunday    [{:id "calendar" :text "Review calendar (2w back/4w forward)"}
+               {:id "waiting" :text "Review Waiting for & Package tracking"}]}
 
   :week-even
-  {:monday    ["Gmail inbox"]
-   :tuesday   ["Physical inbox"]
-   :wednesday ["Photo inbox" "Review recent screenshots"]
-   :thursday  ["Gmail inbox"]
-   :friday    ["Review open tabs on phone"]
-   :sunday    ["Review calendar (2w back/4w forward)" "Review Waiting for & Package tracking"]}}
+  {:monday    [{:id "gmail" :text "Gmail inbox"}]
+   :tuesday   [{:id "physical-inbox" :text "Physical inbox"}]
+   :wednesday [{:id "photo-inbox" :text "Photo inbox"}
+               {:id "screenshots" :text "Review recent screenshots"}]
+   :thursday  [{:id "gmail" :text "Gmail inbox"}]
+   :friday    [{:id "tabs" :text "Review open tabs on phone"}]
+   :sunday    [{:id "calendar" :text "Review calendar (2w back/4w forward)"}
+               {:id "waiting" :text "Review Waiting for & Package tracking"}]}}
 
  :household
  {:week-odd
-  {:monday    ["Bathroom"]
-   :thursday  ["Dust"]
-   :sunday    ["Bath towels"]}
+  {:monday    [{:id "bathroom" :text "Bathroom"}]
+   :thursday  [{:id "dust" :text "Dust"}]
+   :sunday    [{:id "towels" :text "Bath towels"}]}
 
   :week-even
-  {:wednesday ["Vacuum"]
-   :sunday    ["Bath towels"]}}}
+  {:wednesday [{:id "vacuum" :text "Vacuum"}]
+   :sunday    [{:id "towels" :text "Bath towels"}]}}}

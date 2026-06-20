@@ -1,11 +1,14 @@
 (ns app.core
-  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
+  (:require [uix.core :refer [defui defhook $ use-state use-effect use-effect-event]]
             [uix.dom]
+            [app.completions :as completion]
+            [app.config :as config]
+            [app.date-utils :as dates]
             [app.schedule :as sched]
             [app.storage :as storage]
+            [app.sync :as sync]
             [app.tasks :as tasks]
             [app.timer :refer [timer]]
-            [app.utils :as utils]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -19,11 +22,11 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-(defui task-button [{:keys [name done? on-toggle]}]
+(defui task-button [{:keys [id text done? on-toggle]}]
   ($ :button
-     {:on-click #(on-toggle name)
+     {:on-click #(on-toggle id)
       :aria-pressed done?
-      :aria-label name
+      :aria-label text
       :class (str "flex aspect-[2/1] w-full items-center justify-center "
                   "overflow-hidden rounded-2xl border-2 px-6 "
                   "cursor-pointer select-none touch-manipulation active:scale-[0.98] "
@@ -35,7 +38,7 @@
        ($ :span {:class "font-bold leading-none text-white text-check-fluid"}
           "✓")
        ($ :span {:class "font-bold text-label text-center text-label-fluid"}
-          name))))
+          text))))
 
 (defui scroll-cue [{:keys [show?]}]
   (when show?
@@ -51,16 +54,16 @@
   ($ :p {:class "py-20 text-center text-[17px] font-medium italic text-muted tracking-wide text-inset"}
      "You're on top :)"))
 
-(defui task-list [{:keys [by-category done toggle]}]
+(defui task-list [{:keys [by-category done? toggle]}]
   (for [[cat label] categories
         :let [ts (by-category cat)]
         :when (seq ts)]
     ($ :section {:key (str cat) :class "contents"}
        ($ :h2 {:class "px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading"}
           label)
-       (for [{:keys [name]} ts]
-         ($ task-button {:key name :name name
-                         :done? (contains? done name)
+       (for [{:keys [id text]} ts]
+         ($ task-button {:key id :id id :text text
+                         :done? (done? id)
                          :on-toggle toggle})))))
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
@@ -71,7 +74,7 @@
                                               seed-schedule))]
     (use-effect
      (fn []
-       (when-let [url (not-empty (storage/read-schedule-url))]
+       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
          (sched/fetch-schedule! url
                                 (fn [raw parsed]
                                   (storage/write-schedule-cache! raw)
@@ -80,13 +83,41 @@
      [])
     schedule))
 
-(defhook use-done [date-key]
-  (let [[done set-done] (use-state #(or (storage/read-done date-key) #{}))]
+(defhook use-completions [today schedule category-keys]
+  (let [today-key (dates/iso-date today)
+        [completions set-completions] (use-state #(or (storage/read-completions) {}))
+        [outbox set-outbox] (use-state #(or (storage/read-outbox) #{}))
+        creds (fn [] (config/remote-creds (config/parse-config (storage/read-config))))
+        flush! (fn [completions outbox]
+                 (when-let [{:keys [url key]} (creds)]
+                   (when (seq outbox)
+                     (sync/upsert-completions!
+                      url key
+                      (sync/flush-payload outbox completions)
+                      #(set-outbox (fn [pending] (sync/clear-pending pending outbox)))))))
+        hydrate! (use-effect-event
+                  (fn []
+                    (when-let [{:keys [url key]} (creds)]
+                      (sync/fetch-completions! url key
+                                               (fn [remote]
+                                                 (set-completions (sync/reconcile remote (select-keys completions outbox)))))
+                      (flush! completions outbox))))]
     (use-effect
-     (fn [] (storage/write-done! date-key done))
-     [date-key done])
-    [done (fn [name]
-            (set-done #(if (contains? % name) (disj % name) (conj % name))))]))
+     (fn [] (storage/write-completions! completions))
+     [completions])
+    (use-effect
+     (fn [] (storage/write-outbox! outbox))
+     [outbox])
+    (use-effect
+     (fn [] (hydrate!) js/undefined)
+     [today])
+    [(fn [id] (completion/covered? completions id today-key))
+     (fn [id]
+       (let [next-completions (completion/toggle completions schedule category-keys today id)
+             next-outbox      (sync/mark-dirty outbox id)]
+         (set-completions next-completions)
+         (set-outbox next-outbox)
+         (flush! next-completions next-outbox)))]))
 
 (defhook use-today []
   (let [[today set-today!] (use-state #(js/Date.))]
@@ -135,24 +166,24 @@
 ;; ── App ──────────────────────────────────────────────────────────────────────
 
 (defui day-view [{:keys [today schedule]}]
-  (let [[done toggle] (use-done (utils/iso-date today))
+  (let [category-keys (map first categories)
+        [done? toggle] (use-completions today schedule category-keys)
         more? (use-overflow?)
-        by-category (group-by :category
-                              (tasks/tasks-for schedule today (map first categories)))]
+        by-category (group-by :category (tasks/tasks-for schedule today category-keys))]
     ($ :<>
        ($ :div {:class "mx-auto w-full max-w-md"}
           ($ screen-header {:date today})
           ($ :div {:class "flex w-full flex-col gap-4 px-1 py-2"}
              (if (empty? by-category)
                ($ empty-state)
-               ($ task-list {:by-category by-category :done done :toggle toggle}))))
+               ($ task-list {:by-category by-category :done? done? :toggle toggle}))))
        ($ scroll-cue {:show? more?}))))
 
 (defui app []
   (let [today (use-today)
         schedule (use-schedule)]
     ($ :div {:class "px-7 pt-12 pb-16"}
-       ($ day-view {:key (utils/iso-date today) :today today :schedule schedule})
+       ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})
        ($ timer))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
@@ -161,4 +192,5 @@
   (uix.dom/create-root (js/document.getElementById "app")))
 
 (defn ^:export init []
+  (config/warn-unknown-keys! (storage/read-config))
   (uix.dom/render-root ($ app) root))

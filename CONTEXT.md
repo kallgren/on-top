@@ -5,7 +5,7 @@ A calm daily check-off surface for a personal routine system: each day shows the
 ## Language
 
 **Task**:
-A single chore shown for the day, written as a plain name (e.g. "Gmail inbox"). A task name is unique across the whole day — it never repeats, in either category, on the same day.
+A recurring chore with a stable **id** and a separate display **text** — the text can be reworded without changing the task or losing its **Done through** history. The same task recurs across many days; within a single day its id appears at most once, in one category.
 _Avoid_: item, todo, chore (in code)
 
 **Category**:
@@ -13,19 +13,23 @@ The kind of a task. Exactly two exist: `:household` and `:digital`. Fixed, not u
 _Avoid_: section, group, type
 
 **Completion**:
-The record that a task has been marked done today. Lives only for the current day and is cleared when the date rolls over. Identified by the task's bare name.
+A task having been done, identified by the task's id (not its display text). Recorded as a single **Done through** date per task, and surfaced for display as "done today" when that date covers today (`today ≤ done-through`). One record each — bounded by task count, not days — surviving the date rollover.
 _Avoid_: check, status, state, progress
 
-**Core routine**:
-The household and digital tasks the app owns today: the recurring weekly-to-fortnightly chores, as opposed to **Rare**. "Core" marks cadence and ownership — *these* tasks, *now* — not when they happen (that's the **Schedule**).
+**Done through**:
+The date a **Completion** is recorded against: the day up to and including which a task is considered done — forward-looking *coverage*, not a backward "last done". A daily task marked done is done through today and so reads as not-done tomorrow. Unmarking rolls the date back to the task's previous scheduled occurrence rather than clearing it, so coverage slides between occurrences.
+_Avoid_: last completion, last done, due date, expiry
+
+**Core tasks**:
+The **Task**s this app currently handles: the chores worth keeping on top of across the two-week schedule. The counterpart to **Rare tasks**.
 _Avoid_: routine (alone — ambiguous)
 
-**Rare**:
-The monthly-to-yearly chores that the app deliberately does NOT own yet — they stay in Apple Reminders until the app earns them. The counterpart to **Core routine**: same kind of chores, slower cadence, out of scope for now.
+**Rare tasks**:
+**Task**s on a slower cadence — monthly to yearly — that the app does not handle yet; they stay in Apple Reminders for now. The counterpart to **Core tasks**.
 _Avoid_: occasional, infrequent
 
 **Schedule**:
-The concrete configuration of *when* each Core routine task occurs — the assignment of tasks to weekday slots across the two-week parity cycle. A domain concept ("add Gmail to the schedule on Mondays"), independent of how or where it's stored.
+The concrete configuration of *when* each Core task occurs — the assignment of tasks to weekday slots across the two-week parity cycle. A domain concept ("add Gmail to the schedule on Mondays"), independent of how or where it's stored.
 _Avoid_: calendar, plan, config
 
 **Week parity**:
