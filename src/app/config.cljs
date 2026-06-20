@@ -14,3 +14,7 @@
           (string? (m "scheduleUrl"))            (assoc :schedule-url (m "scheduleUrl")))
         {}))
     (catch :default _ {})))
+
+(defn remote-creds [{:keys [completions-db-url supabase-publishable-key]}]
+  (when (and (not-empty completions-db-url) (not-empty supabase-publishable-key))
+    {:url completions-db-url :key supabase-publishable-key}))

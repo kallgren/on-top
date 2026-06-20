@@ -42,3 +42,14 @@
 (deftest parse-config-of-absent-or-blank-is-empty
   (is (= {} (config/parse-config nil)))
   (is (= {} (config/parse-config ""))))
+
+(deftest remote-creds-when-url-and-key-are-both-present
+  (is (= {:url "https://x.supabase.co/rest/v1/completions" :key "sb_publishable_x"}
+         (config/remote-creds {:completions-db-url       "https://x.supabase.co/rest/v1/completions"
+                               :supabase-publishable-key "sb_publishable_x"}))))
+
+(deftest remote-creds-is-nil-without-both
+  (is (nil? (config/remote-creds {:completions-db-url "https://x.supabase.co/rest/v1/completions"})))
+  (is (nil? (config/remote-creds {:supabase-publishable-key "sb_publishable_x"})))
+  (is (nil? (config/remote-creds {:completions-db-url "" :supabase-publishable-key "sb_publishable_x"})))
+  (is (nil? (config/remote-creds {}))))

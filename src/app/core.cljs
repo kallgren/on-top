@@ -87,25 +87,21 @@
   (let [today-key (dates/iso-date today)
         [completions set-completions] (use-state #(or (storage/read-completions) {}))
         [outbox set-outbox] (use-state #(or (storage/read-outbox) #{}))
+        creds (fn [] (config/remote-creds (config/parse-config (storage/read-config))))
         flush! (fn [completions outbox]
-                 (let [{:keys [completions-db-url supabase-publishable-key]}
-                       (config/parse-config (storage/read-config))]
-                   (when (and (not-empty completions-db-url)
-                              (not-empty supabase-publishable-key)
-                              (seq outbox))
+                 (when-let [{:keys [url key]} (creds)]
+                   (when (seq outbox)
                      (sync/upsert-completions!
-                      completions-db-url supabase-publishable-key
+                      url key
                       (sync/flush-payload outbox completions)
                       #(set-outbox (fn [pending] (sync/clear-pending pending outbox)))))))
         hydrate! (use-effect-event
                   (fn []
-                    (let [{:keys [completions-db-url supabase-publishable-key]}
-                          (config/parse-config (storage/read-config))]
-                      (when (and (not-empty completions-db-url) (not-empty supabase-publishable-key))
-                        (sync/fetch-completions! completions-db-url supabase-publishable-key
-                                                 (fn [remote]
-                                                   (set-completions (sync/reconcile remote (select-keys completions outbox)))))
-                        (flush! completions outbox)))))]
+                    (when-let [{:keys [url key]} (creds)]
+                      (sync/fetch-completions! url key
+                                               (fn [remote]
+                                                 (set-completions (sync/reconcile remote (select-keys completions outbox)))))
+                      (flush! completions outbox))))]
     (use-effect
      (fn [] (storage/write-completions! completions))
      [completions])
