@@ -192,4 +192,5 @@
   (uix.dom/create-root (js/document.getElementById "app")))
 
 (defn ^:export init []
+  (config/warn-unknown-keys! (storage/read-config))
   (uix.dom/render-root ($ app) root))

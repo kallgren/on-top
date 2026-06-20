@@ -53,3 +53,20 @@
   (is (nil? (config/remote-creds {:supabase-publishable-key "sb_publishable_x"})))
   (is (nil? (config/remote-creds {:completions-db-url "" :supabase-publishable-key "sb_publishable_x"})))
   (is (nil? (config/remote-creds {}))))
+
+(deftest unknown-keys-lists-keys-outside-the-allow-list
+  (is (= ["supabaseAnonKey"]
+         (config/unknown-keys
+          "{\"completionsDbUrl\": \"x\", \"supabaseAnonKey\": \"y\"}"))))
+
+(deftest unknown-keys-is-nil-when-every-key-is-recognized
+  (is (nil? (config/unknown-keys
+             (str "{\"completionsDbUrl\": \"x\", "
+                  "\"supabasePublishableKey\": \"y\", "
+                  "\"scheduleUrl\": \"z\"}"))))
+  (is (nil? (config/unknown-keys "{}"))))
+
+(deftest unknown-keys-of-unparseable-or-non-object-is-nil
+  (is (nil? (config/unknown-keys "{\"scheduleUrl\": not closed")))
+  (is (nil? (config/unknown-keys "[\"x\"]")))
+  (is (nil? (config/unknown-keys nil))))
