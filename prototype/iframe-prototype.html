@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>On Top — merge prototype</title>
+    <style>
+      :root {
+        --page: #e8e1d1;
+        --dot: #c6bba0;
+        --dot-active: #9a917b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page: #0f1828;
+          --dot: #324063;
+          --dot-active: #6e7c98;
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: var(--page);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* The one container: horizontal scroll-snap on narrow, side-by-side on wide. */
+      .surfaces {
+        display: flex;
+        height: 100dvh;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .surfaces::-webkit-scrollbar { display: none; }
+
+      .panel {
+        flex: 0 0 100%;
+        min-width: 100%;
+        height: 100%;
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: var(--page);
+      }
+
+      /* Mobile swipe affordance. */
+      .dots {
+        position: fixed;
+        inset-inline: 0;
+        bottom: max(14px, env(safe-area-inset-bottom));
+        display: flex;
+        justify-content: center;
+        gap: 9px;
+        pointer-events: none;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--dot);
+        transition: background 150ms, transform 150ms;
+      }
+      .dot.active {
+        background: var(--dot-active);
+        transform: scale(1.25);
+      }
+
+      /* Wide: drop the snap/scroll, lay the two surfaces side by side at natural widths. */
+      @media (min-width: 1200px) {
+        .surfaces {
+          overflow-x: hidden;
+          scroll-snap-type: none;
+          justify-content: center;
+          gap: 8px;
+        }
+        .panel { flex: 0 0 auto; min-width: 0; }
+        .panel--core { width: 480px; }   /* ~ Core max-w-md + breathing room */
+        .panel--rare { width: 720px; }   /* ~ Rare max-w-2xl + breathing room */
+        .dots { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="surfaces" id="surfaces">
+      <div class="panel panel--core">
+        <iframe src="https://on-top-routines.vercel.app/" title="Core" loading="eager"></iframe>
+      </div>
+      <div class="panel panel--rare">
+        <iframe src="https://orbit-routines.vercel.app/" title="Rare" loading="eager"></iframe>
+      </div>
+    </div>
+
+    <div class="dots" id="dots">
+      <span class="dot active"></span>
+      <span class="dot"></span>
+    </div>
+
+    <script>
+      const surfaces = document.getElementById("surfaces");
+      const dots = [...document.querySelectorAll("#dots .dot")];
+      let raf = 0;
+      surfaces.addEventListener("scroll", () => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          const i = Math.round(surfaces.scrollLeft / surfaces.clientWidth);
+          dots.forEach((d, n) => d.classList.toggle("active", n === i));
+        });
+      }, { passive: true });
+    </script>
+  </body>
+</html>
