@@ -29,8 +29,8 @@
 
 ;; ── Wiring ───────────────────────────────────────────────────────────────────
 
-(def completions-key "on-top/completions")
-(def outbox-key "on-top/outbox")
+(def completions-key "on-top/core-completions")
+(def outbox-key "on-top/core-outbox")
 
 (defn- read-initial []
   {:completions (or (storage/read-completions completions-key) {})
