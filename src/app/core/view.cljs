@@ -10,7 +10,7 @@
 
 ;; ── Setup ────────────────────────────────────────────────────────────────────
 
-(def seed-schedule (reader/read-string (rc/inline "app/seed.edn")))
+(def seed-schedule (reader/read-string (rc/inline "app/core/seed.edn")))
 
 (def schedule-cache-key "on-top/schedule-cache")
 

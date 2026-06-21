@@ -1,4 +1,4 @@
-(ns app.tasks
+(ns app.core.tasks
   (:require [app.date-utils :refer [iso-date weekday-kw week-parity]]))
 
 (defn tasks-for [schedule date category-keys]

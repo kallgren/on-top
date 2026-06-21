@@ -1,6 +1,6 @@
-(ns app.tasks-test
+(ns app.core.tasks-test
   (:require [cljs.test :refer [deftest is]]
-            [app.tasks :as tasks]))
+            [app.core.tasks :as tasks]))
 
 (deftest tasks-for-returns-the-days-scheduled-tasks
   (let [schedule {:digital   {:week-odd {:thursday [{:id "gmail" :text "Gmail"}]}}

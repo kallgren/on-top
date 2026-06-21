@@ -8,7 +8,7 @@
             [app.date-utils :refer [iso-date]]
             [app.shared.store :as store]
             [app.storage :as storage]
-            [app.tasks :as tasks]))
+            [app.core.tasks :as tasks]))
 
 ;; ── Coverage ─────────────────────────────────────────────────────────────────
 
