@@ -1,14 +1,16 @@
 (ns app.config
   "Device-local remote config: a single localStorage JSON blob holding the
-   completions DB URL, Supabase publishable key, and the schedule's gist URL.
+   completions DB URL, Supabase publishable key, and a per-surface Schedule gist
+   URL (one for Core, one for Rare).
    The blob uses camelCase JSON keys; parse-config maps them to kebab keywords.
-   See docs/adr/0007."
+   See docs/adr/0007 and docs/adr/0010."
   (:require [clojure.string :as str]))
 
 (def ^:private key->keyword
   {"completionsDbUrl"       :completions-db-url
    "supabasePublishableKey" :supabase-publishable-key
-   "scheduleUrl"            :schedule-url})
+   "coreScheduleUrl"        :core-schedule-url
+   "rareScheduleUrl"        :rare-schedule-url})
 
 (def ^:private known-keys (set (keys key->keyword)))
 

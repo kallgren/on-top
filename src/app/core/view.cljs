@@ -1,10 +1,8 @@
 (ns app.core.view
   (:require [uix.core :refer [defui defhook $ use-state use-effect]]
-            [app.config :as config]
             [app.core.store :as store]
             [app.date-utils :as dates]
-            [app.schedule :as sched]
-            [app.storage :as storage]
+            [app.shared.schedule :as sched]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -12,7 +10,7 @@
 
 (def seed-schedule (reader/read-string (rc/inline "app/core/seed.edn")))
 
-(def schedule-cache-key "on-top/schedule-cache")
+(def schedule-cache-key "on-top/core-schedule-cache")
 
 (def categories
   [[:digital   "Digital"]
@@ -66,21 +64,6 @@
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
 
-(defhook use-schedule []
-  (let [[schedule set-schedule!] (use-state #(sched/resolve-schedule
-                                              (sched/parse-schedule (storage/read-schedule-cache schedule-cache-key))
-                                              seed-schedule))]
-    (use-effect
-     (fn []
-       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
-         (sched/fetch-schedule! url
-                                (fn [raw parsed]
-                                  (storage/write-schedule-cache! schedule-cache-key raw)
-                                  (set-schedule! parsed))))
-       js/undefined)
-     [])
-    schedule))
-
 (defhook use-overflow? []
   (let [[more? set-more?] (use-state false)]
     (use-effect
@@ -114,5 +97,5 @@
        ($ scroll-cue {:show? more?}))))
 
 (defui view [{:keys [today]}]
-  (let [schedule (use-schedule)]
+  (let [schedule (sched/use-schedule :core-schedule-url schedule-cache-key seed-schedule)]
     ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})))

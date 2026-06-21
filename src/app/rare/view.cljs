@@ -1,9 +1,8 @@
 (ns app.rare.view
-  (:require [uix.core :refer [defui defhook $ use-state]]
+  (:require [uix.core :refer [defui $ use-state]]
             [app.date-utils :refer [iso->date]]
             [app.rare.store :as store]
-            [app.schedule :as sched]
-            [app.storage :as storage]
+            [app.shared.schedule :as sched]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -159,18 +158,10 @@
                ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
                         :expanded? show-upcoming? :on-fold #(set-upcoming! not) :top? false})))))))
 
-;; ── Hooks ────────────────────────────────────────────────────────────────────
-
-(defhook use-schedule []
-  (let [[schedule] (use-state #(sched/resolve-schedule
-                                (sched/parse-schedule (storage/read-schedule-cache schedule-cache-key))
-                                seed-schedule))]
-    schedule))
-
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui view [{:keys [today]}]
-  (let [schedule       (use-schedule)
+  (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule)]
     ($ :div {:class "flex flex-col gap-4"}
        (for [[cat label] categories
