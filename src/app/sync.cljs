@@ -19,15 +19,18 @@
 (defn mark-dirty [outbox id]
   (conj outbox id))
 
-(defn flush-payload [outbox completions]
+(defn flush-payload [surface outbox completions]
   (for [id outbox]
-    {"task_id" id "done_through" (get completions id)}))
+    {"surface" surface "task_id" id "done_through" (get completions id)}))
 
 (defn clear-pending [outbox confirmed]
   (reduce disj outbox confirmed))
 
-(defn fetch-completions! [url publishable-key on-ok]
-  (-> (js/fetch (str url "?select=task_id,done_through")
+(defn select-query [surface]
+  (str "?select=task_id,done_through&surface=eq." surface))
+
+(defn fetch-completions! [url publishable-key surface on-ok]
+  (-> (js/fetch (str url (select-query surface))
                 #js {:headers #js {:apikey        publishable-key
                                    :Authorization (str "Bearer " publishable-key)}})
       (.then (fn [res]

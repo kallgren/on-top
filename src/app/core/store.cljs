@@ -4,7 +4,6 @@
    the day's projection, and the toggle! adapter that dispatches the generic
    toggled event."
   (:require [uix.core :refer [defhook use-state]]
-            [app.config :as config]
             [app.date-utils :refer [iso-date]]
             [app.shared.store :as store]
             [app.storage :as storage]
@@ -40,13 +39,11 @@
   (storage/write-completions! completions-key completions)
   (storage/write-outbox! outbox-key outbox))
 
-(defn- creds []
-  (config/remote-creds (config/parse-config (storage/read-config))))
-
 (defhook use-store [today schedule category-keys]
   (let [[store] (use-state #(store/create (read-initial)))
         snapshot (store/use-subscribe store)]
-    (store/use-sync! store snapshot {:persist! persist! :creds creds} today)
+    (store/use-sync! store snapshot
+                     {:persist! persist! :creds store/creds :surface "core"} today)
     [(select snapshot schedule today category-keys)
      (fn [id]
        (swap! store store/toggled id
