@@ -12,6 +12,8 @@
 
 (def seed-schedule (reader/read-string (rc/inline "app/seed.edn")))
 
+(def schedule-cache-key "on-top/schedule-cache")
+
 (def categories
   [[:digital   "Digital"]
    [:household "Household"]])
@@ -66,14 +68,14 @@
 
 (defhook use-schedule []
   (let [[schedule set-schedule!] (use-state #(sched/resolve-schedule
-                                              (sched/parse-schedule (storage/read-schedule-cache))
+                                              (sched/parse-schedule (storage/read-schedule-cache schedule-cache-key))
                                               seed-schedule))]
     (use-effect
      (fn []
        (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
          (sched/fetch-schedule! url
                                 (fn [raw parsed]
-                                  (storage/write-schedule-cache! raw)
+                                  (storage/write-schedule-cache! schedule-cache-key raw)
                                   (set-schedule! parsed))))
        js/undefined)
      [])

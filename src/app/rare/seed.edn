@@ -1,0 +1,30 @@
+;; On Top — the Rare maintenance schedule.
+;;
+;; Keyed by category (:digital / :household), then by Interval label string
+;; ("monthly", "2 weeks", …), then a vector of tasks. Each task is
+;; {:id :name :anchor} with an optional :before lead time in days.
+;; :id is the stable identity done-through history hangs off; :name is the
+;; display label and can be reworded freely; :anchor is the first occurrence's
+;; month-day, stepped forward by the Interval to place all later occurrences.
+;; Picked to span every interval and keep the demo looking lived-in all year.
+{:digital
+ {"monthly"   [{:id "back-up-files"     :name "Back up photos and laptop"      :anchor "Jun 14"}
+               {:id "review-subs"       :name "Review subscriptions"           :anchor "Jun 6"}]
+  "quarterly" [{:id "update-passwords"  :name "Update key passwords"           :anchor "Apr 9"}]
+  "6 months"  [{:id "review-insurance"  :name "Review insurance and contracts" :anchor "Jan 12"}]
+  "yearly"    [{:id "renew-domain"      :name "Renew domain name"              :anchor "Feb 14"}
+               {:id "file-tax-return"   :name "File the tax return"            :anchor "Jul 31" :before 90}]}
+ :household
+ {"2 weeks"   [{:id "put-out-recycling" :name "Put out the recycling"          :anchor "Jun 5" :before 7}
+               {:id "put-out-waste"     :name "Put out the general waste"      :anchor "Jun 12" :before 7}
+               {:id "change-bed-linen"  :name "Change the bed linen"           :anchor "Jun 13"}]
+  "monthly"   [{:id "clean-fridge"      :name "Clean out the fridge"           :anchor "May 28"}
+               {:id "vacuum-under-bed"  :name "Vacuum under the bed"           :anchor "Jun 2"}]
+  "2 months"  [{:id "descale-kettle"    :name "Descale the kettle"             :anchor "Apr 30"}
+               {:id "clean-oven"        :name "Clean the oven"                 :anchor "May 16"}]
+  "quarterly" [{:id "test-smoke-alarms" :name "Test the smoke alarms"          :anchor "May 24"}
+               {:id "deep-clean-bath"   :name "Deep clean the bathroom"        :anchor "Mar 30"}]
+  "6 months"  [{:id "wash-windows"      :name "Wash the windows"               :anchor "Apr 2"}
+               {:id "service-bicycle"   :name "Service the bicycle"            :anchor "Feb 20"}]
+  "yearly"    [{:id "rotate-mattress"   :name "Rotate the mattress"            :anchor "Mar 8"}
+               {:id "flush-water-heater" :name "Flush the water heater"        :anchor "Jan 20"}]}}

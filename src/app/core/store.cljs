@@ -29,13 +29,16 @@
 
 ;; ── Wiring ───────────────────────────────────────────────────────────────────
 
+(def completions-key "on-top/completions")
+(def outbox-key "on-top/outbox")
+
 (defn- read-initial []
-  {:completions (or (storage/read-completions) {})
-   :outbox      (or (storage/read-outbox) #{})})
+  {:completions (or (storage/read-completions completions-key) {})
+   :outbox      (or (storage/read-outbox outbox-key) #{})})
 
 (defn- persist! [{:keys [completions outbox]}]
-  (storage/write-completions! completions)
-  (storage/write-outbox! outbox))
+  (storage/write-completions! completions-key completions)
+  (storage/write-outbox! outbox-key outbox))
 
 (defn- creds []
   (config/remote-creds (config/parse-config (storage/read-config))))
