@@ -16,8 +16,10 @@ Each was once a standalone app; now each is a bounded context with its own
 **Schedule**, view, and completion store, sharing the kernel language below. The
 two are distinguished by **posture** — the relationship you have to the work —
 not by how often a task recurs. ("Core" and "Rare" are working names; the
-distinction is posture, not frequency.)
-_Avoid_: app, view, tab, mode, pane, screen
+distinction is posture, not frequency.) A Surface is a *concept* — a bounded
+context, the unit a completion is tagged with — not the region of screen it
+occupies: it is *rendered in* a **Pane**. Reserve "surface" for "Core or Rare".
+_Avoid_: app, view, tab, mode, screen; "surface" for the on-screen region (that's a Pane)
 
 **Core** — _posture: today._
 The areas where things pile up: inboxes, files, photos. You've committed to a
@@ -30,6 +32,14 @@ Slower upkeep done when **time and energy allow**, plus a few with real
 deadlines. Unobtrusive by design — it shouldn't speak up unless a date is
 closing in.
 Language: [src/app/rare/CONTEXT.md](src/app/rare/CONTEXT.md).
+
+**Pane**:
+The on-screen region that renders one **Surface** in the shell's current layout.
+A view-layer term, not a domain one — the Pane can change shape (side by side,
+swipeable) without touching what a Surface *is* or how a completion is tagged.
+One Pane per Surface today.
+_Avoid_: using "Pane" for the Surface concept or a completion's tag (that's the
+Surface)
 
 ## Shared language
 

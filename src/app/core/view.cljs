@@ -1,6 +1,5 @@
-(ns app.core
+(ns app.core.view
   (:require [uix.core :refer [defui defhook $ use-state use-effect use-effect-event]]
-            [uix.dom]
             [app.completions :as completion]
             [app.config :as config]
             [app.date-utils :as dates]
@@ -8,7 +7,6 @@
             [app.storage :as storage]
             [app.sync :as sync]
             [app.tasks :as tasks]
-            [app.timer :refer [timer]]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -119,18 +117,6 @@
          (set-outbox next-outbox)
          (flush! next-completions next-outbox)))]))
 
-(defhook use-today []
-  (let [[today set-today!] (use-state #(js/Date.))]
-    (use-effect
-     (fn []
-       (let [on-visible (fn []
-                          (when (= "visible" (.-visibilityState js/document))
-                            (set-today! (js/Date.))))]
-         (.addEventListener js/document "visibilitychange" on-visible)
-         #(.removeEventListener js/document "visibilitychange" on-visible)))
-     [])
-    today))
-
 (defhook use-overflow? []
   (let [[more? set-more?] (use-state false)]
     (use-effect
@@ -163,7 +149,7 @@
        ($ :div {:class "text-[19px] font-medium tracking-wide text-muted"}
           (str wd " · " md)))))
 
-;; ── App ──────────────────────────────────────────────────────────────────────
+;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui day-view [{:keys [today schedule]}]
   (let [category-keys (map first categories)
@@ -179,18 +165,6 @@
                ($ task-list {:by-category by-category :done? done? :toggle toggle}))))
        ($ scroll-cue {:show? more?}))))
 
-(defui app []
-  (let [today (use-today)
-        schedule (use-schedule)]
-    ($ :div {:class "px-7 pt-12 pb-16"}
-       ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})
-       ($ timer))))
-
-;; ── Mount ────────────────────────────────────────────────────────────────────
-
-(defonce root
-  (uix.dom/create-root (js/document.getElementById "app")))
-
-(defn ^:export init []
-  (config/warn-unknown-keys! (storage/read-config))
-  (uix.dom/render-root ($ app) root))
+(defui view [{:keys [today]}]
+  (let [schedule (use-schedule)]
+    ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})))
