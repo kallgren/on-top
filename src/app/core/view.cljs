@@ -1,12 +1,10 @@
 (ns app.core.view
-  (:require [uix.core :refer [defui defhook $ use-state use-effect use-effect-event]]
-            [app.completions :as completion]
+  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [app.config :as config]
+            [app.core.store :as store]
             [app.date-utils :as dates]
             [app.schedule :as sched]
             [app.storage :as storage]
-            [app.sync :as sync]
-            [app.tasks :as tasks]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -52,16 +50,16 @@
   ($ :p {:class "py-20 text-center text-[17px] font-medium italic text-muted tracking-wide text-inset"}
      "You're on top :)"))
 
-(defui task-list [{:keys [by-category done? toggle]}]
+(defui task-list [{:keys [by-category toggle]}]
   (for [[cat label] categories
         :let [ts (by-category cat)]
         :when (seq ts)]
     ($ :section {:key (str cat) :class "contents"}
        ($ :h2 {:class "px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading"}
           label)
-       (for [{:keys [id text]} ts]
+       (for [{:keys [id text done?]} ts]
          ($ task-button {:key id :id id :text text
-                         :done? (done? id)
+                         :done? done?
                          :on-toggle toggle})))))
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
@@ -80,42 +78,6 @@
        js/undefined)
      [])
     schedule))
-
-(defhook use-completions [today schedule category-keys]
-  (let [today-key (dates/iso-date today)
-        [completions set-completions] (use-state #(or (storage/read-completions) {}))
-        [outbox set-outbox] (use-state #(or (storage/read-outbox) #{}))
-        creds (fn [] (config/remote-creds (config/parse-config (storage/read-config))))
-        flush! (fn [completions outbox]
-                 (when-let [{:keys [url key]} (creds)]
-                   (when (seq outbox)
-                     (sync/upsert-completions!
-                      url key
-                      (sync/flush-payload outbox completions)
-                      #(set-outbox (fn [pending] (sync/clear-pending pending outbox)))))))
-        hydrate! (use-effect-event
-                  (fn []
-                    (when-let [{:keys [url key]} (creds)]
-                      (sync/fetch-completions! url key
-                                               (fn [remote]
-                                                 (set-completions (sync/reconcile remote (select-keys completions outbox)))))
-                      (flush! completions outbox))))]
-    (use-effect
-     (fn [] (storage/write-completions! completions))
-     [completions])
-    (use-effect
-     (fn [] (storage/write-outbox! outbox))
-     [outbox])
-    (use-effect
-     (fn [] (hydrate!) js/undefined)
-     [today])
-    [(fn [id] (completion/covered? completions id today-key))
-     (fn [id]
-       (let [next-completions (completion/toggle completions schedule category-keys today id)
-             next-outbox      (sync/mark-dirty outbox id)]
-         (set-completions next-completions)
-         (set-outbox next-outbox)
-         (flush! next-completions next-outbox)))]))
 
 (defhook use-overflow? []
   (let [[more? set-more?] (use-state false)]
@@ -153,16 +115,16 @@
 
 (defui day-view [{:keys [today schedule]}]
   (let [category-keys (map first categories)
-        [done? toggle] (use-completions today schedule category-keys)
+        [tasks toggle] (store/use-store today schedule category-keys)
         more? (use-overflow?)
-        by-category (group-by :category (tasks/tasks-for schedule today category-keys))]
+        by-category (group-by :category tasks)]
     ($ :<>
        ($ :div {:class "mx-auto w-full max-w-md"}
           ($ screen-header {:date today})
           ($ :div {:class "flex w-full flex-col gap-4 px-1 py-2"}
              (if (empty? by-category)
                ($ empty-state)
-               ($ task-list {:by-category by-category :done? done? :toggle toggle}))))
+               ($ task-list {:by-category by-category :toggle toggle}))))
        ($ scroll-cue {:show? more?}))))
 
 (defui view [{:keys [today]}]
