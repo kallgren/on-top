@@ -1,17 +1,9 @@
 (ns app.rare.view
-  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
+  (:require [uix.core :refer [defui $ use-state]]
             [app.date-utils :refer [iso->date]]
-            [app.rare.store :as store]
-            [app.schedule :as sched]
-            [app.storage :as storage]
-            [cljs.reader :as reader]
-            [shadow.resource :as rc]))
+            [app.rare.store :as store]))
 
 ;; ── Setup ────────────────────────────────────────────────────────────────────
-
-(def seed-schedule (reader/read-string (rc/inline "app/rare/seed.edn")))
-
-(def schedule-cache-key "on-top/rare-schedule-cache")
 
 (def categories
   [[:digital   "Digital"]
@@ -159,24 +151,10 @@
                ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
                         :expanded? show-upcoming? :on-fold #(set-upcoming! not) :top? false})))))))
 
-;; ── Hooks ────────────────────────────────────────────────────────────────────
-
-(defhook use-schedule [combined]
-  (let [[cached] (use-state #(sched/parse-schedule (storage/read-schedule-cache schedule-cache-key)))
-        slice    (sched/slice combined :rare)]
-    (use-effect
-     (fn []
-       (when slice
-         (storage/write-schedule-cache! schedule-cache-key (pr-str slice)))
-       js/undefined)
-     [slice])
-    (sched/resolve-schedule slice cached seed-schedule)))
-
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today combined]}]
-  (let [schedule       (use-schedule combined)
-        [by-category toggle] (store/use-store today schedule)]
+(defui view [{:keys [today schedule]}]
+  (let [[by-category toggle] (store/use-store today schedule)]
     ($ :div {:class "flex flex-col gap-4"}
        (for [[cat label] categories
              :let [cat-rows (by-category cat)]

@@ -7,7 +7,42 @@
             [app.schedule :as sched]
             [app.shared.today :refer [use-today]]
             [app.storage :as storage]
-            [app.timer :refer [timer]]))
+            [app.timer :refer [timer]]
+            [cljs.reader :as reader]
+            [shadow.resource :as rc]))
+
+;; ── Schedule ─────────────────────────────────────────────────────────────────
+
+(def seed (reader/read-string (rc/inline "app/seed.edn")))
+
+(def cache-keys
+  {:core "on-top/schedule-cache"
+   :rare "on-top/rare-schedule-cache"})
+
+(defn- read-caches []
+  (update-vals cache-keys #(sched/parse-schedule (storage/read-schedule-cache %))))
+
+(defhook use-schedules []
+  (let [[cached] (use-state read-caches)
+        [combined set-combined!] (use-state nil)]
+    (use-effect
+     (fn []
+       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
+         (sched/fetch-schedule! url (fn [_raw parsed] (set-combined! parsed))))
+       js/undefined)
+     [])
+    (use-effect
+     (fn []
+       (doseq [[surface key] cache-keys]
+         (when-let [slice (sched/slice combined surface)]
+           (storage/write-schedule-cache! key (pr-str slice))))
+       js/undefined)
+     [combined])
+    (into {}
+          (for [surface (keys cache-keys)]
+            [surface (sched/resolve-schedule (sched/slice combined surface)
+                                             (get cached surface)
+                                             (get seed surface))]))))
 
 ;; ── Header ───────────────────────────────────────────────────────────────────
 
@@ -38,20 +73,10 @@
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defhook use-combined-schedule []
-  (let [[combined set-combined!] (use-state nil)]
-    (use-effect
-     (fn []
-       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
-         (sched/fetch-schedule! url (fn [_raw parsed] (set-combined! parsed))))
-       js/undefined)
-     [])
-    combined))
-
 (defui surfaces [{:keys [today]}]
   (let [scroll-ref (use-ref)
         [active set-active!] (use-state 0)
-        combined (use-combined-schedule)]
+        schedules (use-schedules)]
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -68,10 +93,10 @@
                             "wide:snap-none wide:overflow-x-visible")}
           ($ :section {:class "w-full shrink-0 snap-center px-1 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
-                ($ core/view {:today today :combined combined})))
+                ($ core/view {:today today :schedule (:core schedules)})))
           ($ :section {:class "w-full shrink-0 snap-center wide:w-[42rem]"}
              ($ :div {:class "mx-auto w-full max-w-2xl px-7"}
-                ($ rare/view {:today today :combined combined}))))
+                ($ rare/view {:today today :schedule (:rare schedules)}))))
        ($ pane-dots {:active active
                      :on-select (fn [i]
                                   (let [el @scroll-ref]
