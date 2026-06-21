@@ -1,6 +1,5 @@
 (ns app.core.view
   (:require [uix.core :refer [defui defhook $ use-state use-effect]]
-            [app.config :as config]
             [app.core.store :as store]
             [app.date-utils :as dates]
             [app.schedule :as sched]
@@ -66,20 +65,16 @@
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
 
-(defhook use-schedule []
-  (let [[schedule set-schedule!] (use-state #(sched/resolve-schedule
-                                              (sched/parse-schedule (storage/read-schedule-cache schedule-cache-key))
-                                              seed-schedule))]
+(defhook use-schedule [combined]
+  (let [[cached] (use-state #(sched/parse-schedule (storage/read-schedule-cache schedule-cache-key)))
+        slice    (sched/slice combined :core)]
     (use-effect
      (fn []
-       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
-         (sched/fetch-schedule! url
-                                (fn [raw parsed]
-                                  (storage/write-schedule-cache! schedule-cache-key raw)
-                                  (set-schedule! parsed))))
+       (when slice
+         (storage/write-schedule-cache! schedule-cache-key (pr-str slice)))
        js/undefined)
-     [])
-    schedule))
+     [slice])
+    (sched/resolve-schedule slice cached seed-schedule)))
 
 (defhook use-overflow? []
   (let [[more? set-more?] (use-state false)]
@@ -113,6 +108,6 @@
             ($ task-list {:by-category by-category :toggle toggle})))
        ($ scroll-cue {:show? more?}))))
 
-(defui view [{:keys [today]}]
-  (let [schedule (use-schedule)]
+(defui view [{:keys [today combined]}]
+  (let [schedule (use-schedule combined)]
     ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})))

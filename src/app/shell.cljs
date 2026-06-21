@@ -1,9 +1,10 @@
 (ns app.shell
-  (:require [uix.core :refer [defui $ use-state use-ref use-effect]]
+  (:require [uix.core :refer [defui defhook $ use-state use-ref use-effect]]
             [uix.dom]
             [app.config :as config]
             [app.core.view :as core]
             [app.rare.view :as rare]
+            [app.schedule :as sched]
             [app.shared.today :refer [use-today]]
             [app.storage :as storage]
             [app.timer :refer [timer]]))
@@ -37,9 +38,20 @@
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
+(defhook use-combined-schedule []
+  (let [[combined set-combined!] (use-state nil)]
+    (use-effect
+     (fn []
+       (when-let [url (not-empty (:schedule-url (config/parse-config (storage/read-config))))]
+         (sched/fetch-schedule! url (fn [_raw parsed] (set-combined! parsed))))
+       js/undefined)
+     [])
+    combined))
+
 (defui surfaces [{:keys [today]}]
   (let [scroll-ref (use-ref)
-        [active set-active!] (use-state 0)]
+        [active set-active!] (use-state 0)
+        combined (use-combined-schedule)]
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -56,10 +68,10 @@
                             "wide:snap-none wide:overflow-x-visible")}
           ($ :section {:class "w-full shrink-0 snap-center px-1 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
-                ($ core/view {:today today})))
+                ($ core/view {:today today :combined combined})))
           ($ :section {:class "w-full shrink-0 snap-center wide:w-[42rem]"}
              ($ :div {:class "mx-auto w-full max-w-2xl px-7"}
-                ($ rare/view {:today today}))))
+                ($ rare/view {:today today :combined combined}))))
        ($ pane-dots {:active active
                      :on-select (fn [i]
                                   (let [el @scroll-ref]

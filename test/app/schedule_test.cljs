@@ -16,8 +16,24 @@
 (deftest parse-schedule-of-nil-is-nil
   (is (nil? (schedule/parse-schedule nil))))
 
-(deftest resolve-schedule-prefers-cached-over-seed
-  (let [cached {:digital {:week-odd {:monday ["Cached"]}}}
+(deftest slice-extracts-a-surfaces-slice
+  (let [combined {:core {:digital {:week-odd {:monday ["Gmail"]}}}
+                  :rare {:digital {"monthly" [{:id "back-up"}]}}}]
+    (is (= {:digital {:week-odd {:monday ["Gmail"]}}}
+           (schedule/slice combined :core)))
+    (is (= {:digital {"monthly" [{:id "back-up"}]}}
+           (schedule/slice combined :rare)))))
+
+(deftest slice-of-missing-surface-is-nil
+  (is (nil? (schedule/slice {:core {:digital {}}} :rare))))
+
+(deftest slice-of-nil-combined-is-nil
+  (is (nil? (schedule/slice nil :core))))
+
+(deftest resolve-schedule-prefers-gist-then-cache-then-seed
+  (let [gist   {:digital {:week-odd {:monday ["Gist"]}}}
+        cached {:digital {:week-odd {:monday ["Cached"]}}}
         seed   {:digital {:week-odd {:monday ["Seed"]}}}]
-    (is (= cached (schedule/resolve-schedule cached seed)))
-    (is (= seed (schedule/resolve-schedule nil seed)))))
+    (is (= gist   (schedule/resolve-schedule gist cached seed)))
+    (is (= cached (schedule/resolve-schedule nil cached seed)))
+    (is (= seed   (schedule/resolve-schedule nil nil seed)))))

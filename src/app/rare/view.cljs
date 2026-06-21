@@ -1,5 +1,5 @@
 (ns app.rare.view
-  (:require [uix.core :refer [defui defhook $ use-state]]
+  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
             [app.date-utils :refer [iso->date]]
             [app.rare.store :as store]
             [app.schedule :as sched]
@@ -161,16 +161,21 @@
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
 
-(defhook use-schedule []
-  (let [[schedule] (use-state #(sched/resolve-schedule
-                                (sched/parse-schedule (storage/read-schedule-cache schedule-cache-key))
-                                seed-schedule))]
-    schedule))
+(defhook use-schedule [combined]
+  (let [[cached] (use-state #(sched/parse-schedule (storage/read-schedule-cache schedule-cache-key)))
+        slice    (sched/slice combined :rare)]
+    (use-effect
+     (fn []
+       (when slice
+         (storage/write-schedule-cache! schedule-cache-key (pr-str slice)))
+       js/undefined)
+     [slice])
+    (sched/resolve-schedule slice cached seed-schedule)))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today]}]
-  (let [schedule       (use-schedule)
+(defui view [{:keys [today combined]}]
+  (let [schedule       (use-schedule combined)
         [by-category toggle] (store/use-store today schedule)]
     ($ :div {:class "flex flex-col gap-4"}
        (for [[cat label] categories

@@ -9,8 +9,11 @@
       (when (map? parsed) parsed))
     (catch :default _ nil)))
 
-(defn resolve-schedule [cached seed]
-  (or cached seed))
+(defn slice [combined surface]
+  (get combined surface))
+
+(defn resolve-schedule [gist cached seed]
+  (or gist cached seed))
 
 (defn fetch-schedule! [url on-ok]
   (-> (js/fetch url)
