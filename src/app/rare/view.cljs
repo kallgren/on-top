@@ -172,12 +172,11 @@
 (defui view [{:keys [today]}]
   (let [schedule       (use-schedule)
         [by-category toggle] (store/use-store today schedule)]
-    ($ :div {:class "mx-auto w-full max-w-2xl"}
-       ($ :div {:class "flex flex-col gap-4"}
-          (for [[cat label] categories
-                :let [cat-rows (by-category cat)]
-                :when (seq cat-rows)]
-            ($ category-card {:key       (str cat)
-                              :label     label
-                              :cat-tasks cat-rows
-                              :on-toggle toggle}))))))
+    ($ :div {:class "flex flex-col gap-4"}
+       (for [[cat label] categories
+             :let [cat-rows (by-category cat)]
+             :when (seq cat-rows)]
+         ($ category-card {:key       (str cat)
+                           :label     label
+                           :cat-tasks cat-rows
+                           :on-toggle toggle})))))

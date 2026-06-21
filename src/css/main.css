@@ -4,6 +4,7 @@
 @custom-variant pwa (@media (display-mode: standalone));
 
 @theme {
+  --breakpoint-wide: 1200px;      /* side-by-side panes above this width */
   --color-page: #e8e1d1;          /* warm beige page */
   --color-surface: #eee8da;       /* button face */
   --color-surface-hover: #fdfbf6; /* near-white hover */
@@ -42,6 +43,8 @@
   .text-label-fluid { font-size: clamp(1.05rem, 7.5cqi, 2.1rem); }
   .text-check-fluid { font-size: clamp(2.25rem, 26cqi, 4.75rem); }
   .text-inset { text-shadow: 0 1px 1px rgba(255,255,255,0.7), 0 -1px 1px rgba(0,0,0,0.06); }
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
 }
 
 @media (prefers-color-scheme: dark) {
