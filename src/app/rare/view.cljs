@@ -143,20 +143,19 @@
   (let [[show-completed? set-completed!] (use-state false)
         [show-upcoming?  set-upcoming!]  (use-state false)
         {:keys [completed current upcoming]} (partition-tasks cat-tasks)]
-    ($ :div {:class "pb-3"}
-       ($ :div {:class "rounded-2xl border-2 border-edge bg-surface p-2"}
-          ($ card-header {:label label})
-          ($ :div {:class "relative"}
-             (when (seq completed)
-               ($ fold {:label "Completed" :tasks completed :on-toggle on-toggle
-                        :expanded? show-completed? :on-fold #(set-completed! not) :top? true}))
-             (if (empty? current)
-               ($ :p {:class "py-4 text-center text-[15px] font-medium italic text-muted"}
-                  "All clear!")
-               ($ task-list {:tasks current :on-toggle on-toggle}))
-             (when (seq upcoming)
-               ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
-                        :expanded? show-upcoming? :on-fold #(set-upcoming! not) :top? false})))))))
+    ($ :div {:class "rounded-2xl border-2 border-edge bg-surface p-2"}
+       ($ card-header {:label label})
+       ($ :div {:class "relative"}
+          (when (seq completed)
+            ($ fold {:label "Completed" :tasks completed :on-toggle on-toggle
+                     :expanded? show-completed? :on-fold #(set-completed! not) :top? true}))
+          (if (empty? current)
+            ($ :p {:class "py-4 text-center text-[15px] font-medium italic text-muted"}
+               "All clear!")
+            ($ task-list {:tasks current :on-toggle on-toggle}))
+          (when (seq upcoming)
+            ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
+                     :expanded? show-upcoming? :on-fold #(set-upcoming! not) :top? false}))))))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 

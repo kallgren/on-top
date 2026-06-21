@@ -16,7 +16,7 @@
 
 (defui app-header [{:keys [date]}]
   (let [[wd md] (today-parts date)]
-    ($ :header {:class "mb-8 flex flex-col items-center gap-1.5 text-center"}
+    ($ :header {:class "mb-8 flex flex-col items-center gap-1.5 px-7 text-center wide:px-0"}
        ($ :div {:class "pwa:hidden text-[34px] font-extrabold uppercase leading-none tracking-[0.28em] pl-[0.28em] text-muted text-inset"}
           "On Top")
        ($ :div {:class "text-[19px] font-medium tracking-wide text-muted"}
@@ -54,11 +54,11 @@
        ($ :div {:ref scroll-ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto "
                             "wide:snap-none wide:overflow-x-visible")}
-          ($ :section {:class "w-full shrink-0 snap-center px-1 wide:flex-1 wide:px-7"}
+          ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center wide:w-[42rem]"}
-             ($ :div {:class "mx-auto w-full max-w-2xl px-7"}
+             ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
                 ($ rare/view {:today today}))))
        ($ pane-dots {:active active
                      :on-select (fn [i]
@@ -70,7 +70,7 @@
 
 (defui app []
   (let [today (use-today)]
-    ($ :div {:class "px-7 pt-12 pb-10"}
+    ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
        ($ surfaces {:today today})
        ($ timer))))
