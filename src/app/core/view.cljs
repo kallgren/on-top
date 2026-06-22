@@ -1,5 +1,5 @@
 (ns app.core.view
-  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
+  (:require [uix.core :refer [defui defhook $ use-state use-ref use-effect]]
             [app.core.store :as store]
             [app.date-utils :as dates]
             [app.shared.schedule :as sched]
@@ -64,33 +64,44 @@
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
 
+(defn scroll-parent [node]
+  (loop [el (some-> node .-parentElement)]
+    (cond
+      (nil? el) (.-documentElement js/document)
+      (#{"auto" "scroll"} (.-overflowY (js/getComputedStyle el))) el
+      :else (recur (.-parentElement el)))))
+
 (defhook use-overflow? []
-  (let [[more? set-more?] (use-state false)]
+  (let [[more? set-more?] (use-state false)
+        ref (use-ref)]
     (use-effect
      (fn []
-       (let [doc (.-documentElement js/document)
+       (let [el (scroll-parent @ref)
+             doc? (= el (.-documentElement js/document))
+             target (if doc? js/window el)
              update! (fn []
-                       (set-more? (> (- (.-scrollHeight doc)
-                                        (.-innerHeight js/window)
-                                        (.-scrollY js/window))
+                       (set-more? (> (- (.-scrollHeight el)
+                                        (.-clientHeight el)
+                                        (.-scrollTop el))
                                      8)))]
          (update!)
-         (.addEventListener js/window "scroll" update! #js {:passive true})
+         (.addEventListener target "scroll" update! #js {:passive true})
          (.addEventListener js/window "resize" update!)
-         #(do (.removeEventListener js/window "scroll" update!)
+         #(do (.removeEventListener target "scroll" update!)
               (.removeEventListener js/window "resize" update!))))
      [])
-    more?))
+    [more? ref]))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui day-view [{:keys [today schedule]}]
   (let [category-keys (map first categories)
         [tasks toggle] (store/use-store today schedule category-keys)
-        more? (use-overflow?)
+        [more? overflow-ref] (use-overflow?)
         by-category (group-by :category tasks)]
     ($ :<>
-       ($ :div {:class "flex w-full flex-col gap-4 px-1 py-2"}
+       ($ :div {:ref overflow-ref
+                :class "flex w-full flex-col gap-4 px-1 py-2"}
           (if (empty? by-category)
             ($ empty-state)
             ($ task-list {:by-category by-category :toggle toggle})))
