@@ -1,5 +1,5 @@
 (ns app.core.view
-  (:require [uix.core :refer [defui defhook $ use-state use-effect]]
+  (:require [uix.core :refer [defui defhook $ use-state use-effect use-ref]]
             [app.core.store :as store]
             [app.date-utils :as dates]
             [app.shared.schedule :as sched]
@@ -64,22 +64,21 @@
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
 
-(defhook use-overflow? []
+(defhook use-overflow? [ref]
   (let [[more? set-more?] (use-state false)]
     (use-effect
      (fn []
-       (let [doc (.-documentElement js/document)
-             update! (fn []
-                       (set-more? (> (- (.-scrollHeight doc)
-                                        (.-innerHeight js/window)
-                                        (.-scrollY js/window))
-                                     8)))]
+       (let [update! (fn []
+                       (when-let [el @ref]
+                         (set-more? (> (- (.. el getBoundingClientRect -bottom)
+                                          (.-innerHeight js/window))
+                                       8))))]
          (update!)
          (.addEventListener js/window "scroll" update! #js {:passive true})
          (.addEventListener js/window "resize" update!)
          #(do (.removeEventListener js/window "scroll" update!)
               (.removeEventListener js/window "resize" update!))))
-     [])
+     [ref])
     more?))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
@@ -87,10 +86,11 @@
 (defui day-view [{:keys [today schedule]}]
   (let [category-keys (map first categories)
         [tasks toggle] (store/use-store today schedule category-keys)
-        more? (use-overflow?)
+        content-ref (use-ref)
+        more? (use-overflow? content-ref)
         by-category (group-by :category tasks)]
     ($ :<>
-       ($ :div {:class "flex w-full flex-col gap-4 px-1 py-2"}
+       ($ :div {:ref content-ref :class "flex w-full flex-col gap-4 px-1 py-2"}
           (if (empty? by-category)
             ($ empty-state)
             ($ task-list {:by-category by-category :toggle toggle})))
