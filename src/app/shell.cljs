@@ -20,19 +20,19 @@
        {:class (str "fixed inset-x-0 top-0 z-10 flex flex-col items-center px-7 text-center "
                     "transition-all duration-200 "
                     "wide:static wide:z-auto wide:mb-8 wide:px-0 wide:pb-0 wide:pt-12 "
-                    "wide:border-none wide:bg-transparent wide:shadow-none wide:backdrop-blur-none "
                     (if collapsed?
-                      (str "gap-0 pb-2.5 pt-[calc(env(safe-area-inset-top)+1.25rem)] "
-                           "border-b border-edge/50 bg-page/80 shadow-sm backdrop-blur-md")
-                      (str "gap-1.5 pb-8 pt-[calc(env(safe-area-inset-top)+3rem)] "
-                           "border-b border-transparent bg-transparent")))}
+                      "gap-0 pb-2.5 pt-[calc(env(safe-area-inset-top)+1.25rem)] "
+                      "gap-1.5 pb-8 pt-[calc(env(safe-area-inset-top)+3rem)] "))}
        ($ :div {:class (str "pwa:hidden overflow-hidden font-extrabold uppercase leading-none "
                             "tracking-[0.28em] pl-[0.28em] text-[34px] text-muted text-inset "
                             "transition-all duration-200 "
                             (if collapsed? "max-h-0 opacity-0" "max-h-[2.75rem] opacity-100"))}
           "On Top")
        ($ :div {:class (str "font-medium tracking-wide text-muted transition-all duration-200 "
-                            (if collapsed? "text-[15px]" "text-[19px]"))}
+                            (if collapsed?
+                              (str "rounded-full border border-edge/50 bg-page/80 px-4 py-1.5 "
+                                   "text-[15px] shadow-sm backdrop-blur-md")
+                              "text-[19px]"))}
           (str wd " · " md)))))
 
 ;; ── Rare shortcut ────────────────────────────────────────────────────────────
