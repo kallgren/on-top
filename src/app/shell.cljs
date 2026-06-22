@@ -55,6 +55,7 @@
 ;; ── Pane indicator ───────────────────────────────────────────────────────────
 
 (def pane-count 2)
+(def core-pane 0)
 (def rare-pane 1)
 
 (defui pane-dots [{:keys [active on-select]}]
@@ -134,15 +135,15 @@
                   ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
                      ($ rare/view {:today today})))))
          ($ pane-dots {:active active
-                       :on-select scroll-to!})))))
+                       :on-select scroll-to!})
+         ($ timer {:start-hidden? (not= active core-pane)})))))
 
 ;; ── App ──────────────────────────────────────────────────────────────────────
 
 (defui app []
   (let [today (use-today)]
     ($ :div {:class "wide:px-7"}
-       ($ surfaces {:today today})
-       ($ timer))))
+       ($ surfaces {:today today}))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 

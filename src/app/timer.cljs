@@ -8,7 +8,7 @@
         s (mod secs 60)]
     (str m ":" (when (< s 10) "0") s)))
 
-(defui timer []
+(defui timer [{:keys [start-hidden?]}]
   (let [[end-at set-end-at] (use-state nil)
         [left set-left]     (use-state timer-secs)
         done? (and (some? end-at) (zero? left))]
@@ -48,5 +48,6 @@
                               "flex h-16 w-16 items-center justify-center rounded-full "
                               "border-2 border-edge bg-surface text-muted "
                               "text-[22px] font-bold tracking-wide "
-                              "cursor-pointer shadow-lg transition hover:bg-surface-hover active:scale-95")}
+                              "cursor-pointer shadow-lg transition hover:bg-surface-hover active:scale-95 "
+                              (if start-hidden? "pointer-events-none opacity-0" "opacity-100"))}
          "Go"))))
