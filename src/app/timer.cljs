@@ -46,8 +46,8 @@
                   :aria-label "Start 30-minute timer"
                   :class (str "fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] right-7 z-20 "
                               "flex h-16 w-16 items-center justify-center rounded-full "
-                              "border-2 border-edge bg-surface text-muted "
+                              "border border-edge/50 bg-surface/80 text-muted backdrop-blur-md "
                               "text-[22px] font-bold tracking-wide "
-                              "cursor-pointer shadow-lg transition hover:bg-surface-hover active:scale-95 "
+                              "cursor-pointer shadow-sm transition hover:bg-surface-hover/80 active:scale-95 "
                               (if start-hidden? "pointer-events-none opacity-0" "opacity-100"))}
          "Go"))))
