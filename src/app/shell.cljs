@@ -14,7 +14,7 @@
   [(.toLocaleDateString date "en-US" #js {:weekday "long"})
    (.toLocaleDateString date "en-US" #js {:month "long" :day "numeric"})])
 
-(defui app-header [{:keys [date collapsed?]}]
+(defui app-header [{:keys [date collapsed? on-scroll-top]}]
   (let [[wd md] (today-parts date)]
     ($ :header
        {:class (str "fixed inset-x-0 top-0 z-10 flex flex-col items-center px-7 text-center "
@@ -28,11 +28,14 @@
                             "transition-all duration-200 "
                             (if collapsed? "max-h-0 opacity-0" "max-h-[2.75rem] opacity-100"))}
           "On Top")
-       ($ :div {:class (str "font-medium tracking-wide text-muted transition-all duration-200 "
-                            (if collapsed?
-                              (str "rounded-full border border-edge/50 bg-page/80 px-4 py-1.5 "
-                                   "text-[15px] shadow-sm backdrop-blur-md")
-                              "text-[19px]"))}
+       ($ :button {:type "button"
+                   :on-click on-scroll-top
+                   :aria-label "Scroll to top"
+                   :class (str "font-medium tracking-wide text-muted transition-all duration-200 "
+                               (if collapsed?
+                                 (str "cursor-pointer rounded-full border border-edge/50 bg-page/80 "
+                                      "px-4 py-1.5 text-[15px] shadow-sm backdrop-blur-md active:scale-95")
+                                 "pointer-events-none text-[19px]"))}
           (str wd " · " md)))))
 
 ;; ── Rare shortcut ────────────────────────────────────────────────────────────
@@ -107,11 +110,14 @@
     (let [scroll-to! (fn [i]
                        (let [el @scroll-ref]
                          (.scrollTo el #js {:left (* i (.-clientWidth el))
-                                            :behavior "smooth"})))]
+                                            :behavior "smooth"})))
+          scroll-top! (fn []
+                        (when-let [el (if (= active rare-pane) @rare-ref @core-ref)]
+                          (.scrollTo el #js {:top 0 :behavior "smooth"})))]
       ($ :<>
          ($ rare-button {:hidden (= active rare-pane)
                          :on-click #(scroll-to! rare-pane)})
-         ($ app-header {:date today :collapsed? collapsed?})
+         ($ app-header {:date today :collapsed? collapsed? :on-scroll-top scroll-top!})
          ($ :div {:ref scroll-ref
                   :class (str "no-scrollbar flex h-dvh snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                               "wide:h-auto wide:snap-none wide:overflow-x-visible wide:overflow-y-visible wide:pb-10")}
