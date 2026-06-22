@@ -3,6 +3,7 @@
             [uix.dom]
             [app.config :as config]
             [app.core.view :as core]
+            [app.keybinding :as keybinding]
             [app.rare.view :as rare]
             [app.shared.today :refer [use-today]]
             [app.storage :as storage]
@@ -39,7 +40,8 @@
 
 (defui surfaces [{:keys [today]}]
   (let [scroll-ref (use-ref)
-        [active set-active!] (use-state 0)]
+        [active set-active!] (use-state 0)
+        [rare-hidden? set-rare-hidden!] (use-state false)]
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -50,6 +52,7 @@
          (.addEventListener el "scroll" on-scroll #js {:passive true})
          #(.removeEventListener el "scroll" on-scroll)))
      [])
+    (keybinding/use-hotkey "r" #(set-rare-hidden! not))
     ($ :<>
        ($ :div {:ref scroll-ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
@@ -57,7 +60,8 @@
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today})))
-          ($ :section {:class "w-full shrink-0 snap-center wide:w-[42rem]"}
+          ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
+                                   (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
                 ($ rare/view {:today today}))))
        ($ pane-dots {:active active
