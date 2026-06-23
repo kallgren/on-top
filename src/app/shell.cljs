@@ -1,8 +1,9 @@
 (ns app.shell
-  (:require [uix.core :refer [defui $ use-state use-ref use-effect]]
+  (:require [uix.core :refer [defui $ use-state use-ref use-effect use-layout-effect]]
             [uix.dom]
             [app.config :as config]
             [app.core.view :as core]
+            [app.day.view :as day]
             [app.keybinding :as keybinding]
             [app.rare.view :as rare]
             [app.shared.today :refer [use-today]]
@@ -25,7 +26,9 @@
 
 ;; ── Pane indicator ───────────────────────────────────────────────────────────
 
-(def pane-count 2)
+(def pane-count 3)
+
+(def landing-pane 1)
 
 (defui pane-dots [{:keys [active on-select]}]
   ($ :div {:class "fixed inset-x-0 bottom-0 z-20 flex justify-center gap-2.5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] wide:hidden"}
@@ -40,8 +43,14 @@
 
 (defui surfaces [{:keys [today]}]
   (let [scroll-ref (use-ref)
-        [active set-active!] (use-state 0)
+        [active set-active!] (use-state landing-pane)
         [rare-hidden? set-rare-hidden!] (use-state false)]
+    (use-layout-effect
+     (fn []
+       (let [el @scroll-ref]
+         (set! (.-scrollLeft el) (* landing-pane (.-clientWidth el))))
+       js/undefined)
+     [])
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -57,6 +66,8 @@
        ($ :div {:ref scroll-ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
+          ($ :section {:class "w-full shrink-0 snap-center wide:hidden"}
+             ($ day/view))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today})))
