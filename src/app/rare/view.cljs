@@ -1,5 +1,5 @@
 (ns app.rare.view
-  (:require [uix.core :refer [defui $ use-state]]
+  (:require [uix.core :refer [defui $ use-state defhook]]
             [app.date-utils :refer [iso->date]]
             [app.rare.store :as store]
             [app.shared.schedule :as sched]
@@ -157,16 +157,35 @@
             ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
                      :expanded? show-upcoming? :on-fold #(set-upcoming! not) :top? false}))))))
 
+;; ── Hook ─────────────────────────────────────────────────────────────────────
+
+(defn- summarize-current
+  "Reduce the day's projection to what the reveal button shows: how many Current
+  rows are waiting, and whether any carries a deadline countdown (`:due-label`)."
+  [by-category]
+  (let [current (mapcat (comp :current partition-tasks) (vals by-category))]
+    {:current-count (count current)
+     :due?          (boolean (some :due-label current))}))
+
+(defhook use-rare
+  "Own Rare's schedule + completion store and expose both the rendered projection
+   (`:by-category` + `:toggle`) and the reveal-button summary (`:current-count`,
+   `:due?`). Lifted out of `view` so the shell can read the summary while keeping a
+   single store instance."
+  [today]
+  (let [schedule             (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
+        [by-category toggle] (store/use-store today schedule)]
+    (merge {:by-category by-category :toggle toggle}
+           (summarize-current by-category))))
+
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today]}]
-  (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
-        [by-category toggle] (store/use-store today schedule)]
-    ($ :div {:class "flex flex-col gap-4"}
-       (for [[cat label] categories
-             :let [cat-rows (by-category cat)]
-             :when (seq cat-rows)]
-         ($ category-card {:key       (str cat)
-                           :label     label
-                           :cat-tasks cat-rows
-                           :on-toggle toggle})))))
+(defui view [{:keys [by-category toggle]}]
+  ($ :div {:class "flex flex-col gap-4"}
+     (for [[cat label] categories
+           :let [cat-rows (by-category cat)]
+           :when (seq cat-rows)]
+       ($ category-card {:key       (str cat)
+                         :label     label
+                         :cat-tasks cat-rows
+                         :on-toggle toggle}))))

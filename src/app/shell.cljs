@@ -36,12 +36,40 @@
                    :class (str "h-2.5 w-2.5 rounded-full transition-colors "
                                (if (= i active) "bg-muted" "bg-edge"))}))))
 
+;; ── Reveal button ────────────────────────────────────────────────────────────
+
+(defui list-icon []
+  ($ :svg {:viewBox "0 0 18 14" :aria-hidden true
+           :class "h-[18px] w-[20px]" :fill "none" :stroke "currentColor"}
+     ($ :circle {:cx 2 :cy 2  :r 1.4 :fill "currentColor" :stroke "none"})
+     ($ :circle {:cx 2 :cy 7  :r 1.4 :fill "currentColor" :stroke "none"})
+     ($ :circle {:cx 2 :cy 12 :r 1.4 :fill "currentColor" :stroke "none"})
+     ($ :line {:x1 6 :y1 2  :x2 17 :y2 2  :stroke-width 2 :stroke-linecap "round"})
+     ($ :line {:x1 6 :y1 7  :x2 17 :y2 7  :stroke-width 2 :stroke-linecap "round"})
+     ($ :line {:x1 6 :y1 12 :x2 17 :y2 12 :stroke-width 2 :stroke-linecap "round"})))
+
+;; Wide-only; renders only while Rare is hidden. Badge appears once something is
+;; Current, red when any Current row carries a deadline countdown.
+(defui reveal-button [{:keys [count due? on-show]}]
+  ($ :button
+     {:on-click on-show
+      :aria-label (str "Show Rare" (when (pos? count) (str " (" count " due)")))
+      :class (str "fixed top-6 right-6 z-20 hidden wide:block "
+                  "rounded-lg p-2 text-muted cursor-pointer transition-colors hover:bg-label/10")}
+     ($ list-icon)
+     (when (pos? count)
+       ($ :span {:class (str "absolute -top-2 -right-2 flex h-[22px] w-[22px] items-center justify-center "
+                             "rounded-full text-[11px] font-bold leading-none tabular-nums "
+                             (if due? "bg-red-500 text-white" "bg-label text-page"))}
+          count))))
+
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
 (defui surfaces [{:keys [today]}]
   (let [scroll-ref (use-ref)
         [active set-active!] (use-state 0)
-        [rare-hidden? set-rare-hidden!] (use-state false)]
+        [rare-hidden? set-rare-hidden!] (use-state false)
+        {:keys [by-category toggle current-count due?]} (rare/use-rare today)]
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -63,12 +91,15 @@
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today}))))
+                ($ rare/view {:by-category by-category :toggle toggle}))))
        ($ pane-dots {:active active
                      :on-select (fn [i]
                                   (let [el @scroll-ref]
                                     (.scrollTo el #js {:left (* i (.-clientWidth el))
-                                                       :behavior "smooth"})))}))))
+                                                       :behavior "smooth"})))})
+       (when rare-hidden?
+         ($ reveal-button {:count current-count :due? due?
+                           :on-show #(set-rare-hidden! false)})))))
 
 ;; ── App ──────────────────────────────────────────────────────────────────────
 
