@@ -6,11 +6,15 @@
   (is (= {:digital {:week-odd {:monday ["Gmail"]}}}
          (schedule/parse-schedule "{:digital {:week-odd {:monday [\"Gmail\"]}}}"))))
 
+(deftest parse-schedule-reads-a-valid-vector
+  (is (= [{:id "wake" :start "07:00" :name "Wake"}]
+         (schedule/parse-schedule "[{:id \"wake\" :start \"07:00\" :name \"Wake\"}]"))))
+
 (deftest parse-schedule-rejects-unparseable-input
   (is (nil? (schedule/parse-schedule "{:digital not closed"))))
 
-(deftest parse-schedule-rejects-non-map-edn
-  (is (nil? (schedule/parse-schedule "[\"Gmail\" \"Calendar\"]")))
+(deftest parse-schedule-rejects-non-collection-edn
+  (is (nil? (schedule/parse-schedule "\"Gmail\"")))
   (is (nil? (schedule/parse-schedule "42"))))
 
 (deftest parse-schedule-of-nil-is-nil

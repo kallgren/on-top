@@ -3,12 +3,15 @@
             [app.date-utils :as dates]
             [app.day.layout :as layout]
             [app.day.store :as store]
+            [app.shared.schedule :as sched]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
 ;; ── Setup ────────────────────────────────────────────────────────────────────
 
 (def seed-schedule (reader/read-string (rc/inline "app/day/seed.edn")))
+
+(def schedule-cache-key "on-top/day-schedule-cache")
 
 (def column-width 248)
 (def gutter-width 56)
@@ -88,8 +91,8 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui timetable [{:keys [today]}]
-  (let [[schedule toggle] (store/use-store today seed-schedule)
+(defui timetable [{:keys [today schedule]}]
+  (let [[schedule toggle] (store/use-store today schedule)
         container-ref (use-ref)
         [now-min] (use-state now-minutes)
         [avail set-avail!] (use-state #(max 300 (- (.-innerHeight js/window) 200)))
@@ -113,4 +116,5 @@
           ($ now-line {:now-off now-off :now-min now-min})))))
 
 (defui view [{:keys [today]}]
-  ($ timetable {:key (dates/iso-date today) :today today}))
+  (let [schedule (sched/use-schedule :day-schedule-url schedule-cache-key seed-schedule)]
+    ($ timetable {:key (dates/iso-date today) :today today :schedule schedule})))
