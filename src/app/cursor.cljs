@@ -5,7 +5,7 @@
    state plus the shared keybinding listeners and hands the view back the id of
    the row the Cursor is on. A view-layer concern only — inert on touch since the
    keys never fire."
-  (:require [uix.core :refer [defhook use-state]]
+  (:require [uix.core :refer [defhook use-state use-effect]]
             [app.keybinding :refer [use-hotkey]]))
 
 ;; ── Decision ─────────────────────────────────────────────────────────────────
@@ -37,5 +37,16 @@
     (use-hotkey "e" #(when active?
                        (when-let [row (get rows cursor)]
                          (toggle (:id row)))))
+    (use-hotkey "Escape" #(when active? (set-cursor! nil)))
+    (use-effect
+     (fn []
+       ;; Reaching for the mouse dismisses the Cursor, the way clicking elsewhere
+       ;; drops native focus. The listener only lives while the Cursor is awake,
+       ;; so touch taps — where it never wakes — never pay for it.
+       (when (and active? cursor)
+         (let [dismiss #(set-cursor! nil)]
+           (.addEventListener js/window "pointerdown" dismiss)
+           #(.removeEventListener js/window "pointerdown" dismiss))))
+     [active? cursor])
     (when active?
       (:id (get rows cursor)))))
