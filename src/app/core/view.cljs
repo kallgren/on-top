@@ -19,10 +19,6 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-;; The woken Cursor's look: the resting hover face plus a ring. One swappable
-;; token — recolour the ring here and everywhere the Cursor lands follows.
-(def cursor-ring "ring-2 ring-cue")
-
 (defui task-button [{:keys [id name done? at-cursor? on-toggle]}]
   ($ :button
      {:on-click #(on-toggle id)
@@ -36,7 +32,7 @@
                     done?      "bg-done border-done"
                     at-cursor? "bg-surface-hover border-edge"
                     :else      "bg-surface border-edge hover:bg-surface-hover")
-                  (when at-cursor? (str " " cursor-ring)))}
+                  (when at-cursor? (str " " cursor/cursor-ring)))}
      (if done?
        ($ :span {:class "font-bold leading-none text-white text-check-fluid"}
           "✓")
@@ -91,10 +87,12 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui day-view [{:keys [today schedule active?]}]
+(defui day-view [{:keys [today schedule active? on-exit-right]}]
   (let [category-keys (map first categories)
         [tasks toggle] (store/use-store today schedule category-keys)
-        cursor-id (cursor/use-list-cursor tasks toggle active?)
+        focused (cursor/use-list-cursor tasks #(toggle (:id %))
+                                        {:active? active? :on-exit-right on-exit-right})
+        cursor-id (:id focused)
         content-ref (use-ref)
         more? (use-overflow? content-ref)
         by-category (group-by :category tasks)]
@@ -105,6 +103,7 @@
             ($ task-list {:by-category by-category :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))
 
-(defui view [{:keys [today active?]}]
+(defui view [{:keys [today active? on-exit-right]}]
   (let [schedule (sched/use-schedule :core-schedule-url schedule-cache-key seed-schedule)]
-    ($ day-view {:key (dates/iso-date today) :today today :schedule schedule :active? active?})))
+    ($ day-view {:key (dates/iso-date today) :today today :schedule schedule
+                 :active? active? :on-exit-right on-exit-right})))

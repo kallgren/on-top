@@ -59,7 +59,11 @@
 (defui surfaces [{:keys [today wide?]}]
   (let [scroll-ref (use-ref)
         [active set-active!] (use-state landing-pane)
-        [rare-hidden? set-rare-hidden!] (use-state false)]
+        [rare-hidden? set-rare-hidden!] (use-state false)
+        ;; Which Pane holds the one keyboard Cursor. Core by default, so the cold
+        ;; start wakes there; only the active Surface binds the within-Pane keys,
+        ;; so a single Cursor is guaranteed.
+        [cursor-pane set-cursor-pane!] (use-state :core)]
     (use-layout-effect
      (fn []
        (let [el @scroll-ref]
@@ -76,7 +80,15 @@
          (.addEventListener el "scroll" on-scroll #js {:passive true})
          #(.removeEventListener el "scroll" on-scroll)))
      [])
-    (keybinding/use-hotkey "r" #(set-rare-hidden! not))
+    (keybinding/use-hotkey
+     "r"
+     ;; Hiding Rare pulls the Cursor back to Core so no ring is stranded on a
+     ;; hidden Pane; Rare's `:dormant?` then makes it forget where it was.
+     (fn []
+       (let [hiding? (not rare-hidden?)]
+         (set-rare-hidden! hiding?)
+         (when (and hiding? (= cursor-pane :rare))
+           (set-cursor-pane! :core)))))
     ($ :<>
        ($ :div {:ref scroll-ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
@@ -85,13 +97,21 @@
              (when-not wide? ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
-                ;; Core is the active Pane; the keyboard Cursor lives here. Moving
-                ;; the active Pane across the boundary to Rare comes later.
-                ($ core/view {:today today :active? true})))
+                ($ core/view {:today today
+                              :active? (= cursor-pane :core)
+                              ;; Core is leftmost: `h` stays put. `l` reveals Rare
+                              ;; if hidden and crosses the Cursor into it.
+                              :on-exit-right (fn []
+                                               (set-rare-hidden! false)
+                                               (set-cursor-pane! :rare))})))
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today}))))
+                ($ rare/view {:today today
+                              :active? (= cursor-pane :rare)
+                              :dormant? rare-hidden?
+                              ;; Rare is rightmost: `l` stays put. `h` crosses back.
+                              :on-exit-left #(set-cursor-pane! :core)}))))
        ($ pane-dots {:active active
                      :on-select (fn [i]
                                   (let [el @scroll-ref]
