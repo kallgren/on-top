@@ -1,6 +1,8 @@
 (ns app.day.view
   (:require [uix.core :refer [defui $ use-state use-ref use-layout-effect]]
+            [app.date-utils :as dates]
             [app.day.layout :as layout]
+            [app.day.store :as store]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -37,30 +39,43 @@
               :style #js {:top (layout/total-h laid) :left 0 :width (- gutter-width 8)}}
         (layout/min-str (:e (last laid))))))
 
-(defui blocks [{:keys [laid now-min current-id]}]
+(defui block-name [{:keys [now? open? name]}]
+  ($ :<>
+     (when now?
+       ($ :span {:class (str "absolute left-2 top-1.5 text-[10px] font-black uppercase tracking-[0.18em] "
+                             (if open? "text-now" "text-white"))}
+          "Now"))
+     ($ :span {:class (str "text-[14px] font-semibold leading-tight " (when open? "opacity-60"))}
+        name)))
+
+(defui blocks [{:keys [laid now-min current-id on-toggle]}]
   ($ :div {:class "absolute top-0 bottom-0" :style #js {:left gutter-width :right 0}}
      (for [b laid]
-       (let [now? (= (:id b) current-id)
-             past? (and (< (:e b) now-min) (not now?))
-             open? (:open? b)]
-         ($ :div {:key (:id b)
-                  :class (str "absolute left-0 right-0 flex items-center justify-center "
-                              "px-3 text-center select-none "
-                              (if open?
-                                (str "border-2 border-dashed bg-surface text-label "
+       (let [now?  (= (:id b) current-id)
+             done? (:done? b)
+             open? (:open? b)
+             past? (and (< (:e b) now-min) (not now?) (not done?))
+             cls   (str "absolute left-0 right-0 flex items-center justify-center "
+                        "px-3 text-center select-none border-2 "
+                        (cond
+                          done? "bg-done border-done text-white "
+                          open? (str "border-dashed bg-surface text-label "
                                      (if now? "border-now z-10 shadow-md " "border-edge "))
-                                (str "border-2 "
-                                     (if now?
-                                       "bg-now border-now text-white z-10 shadow-md "
-                                       "bg-surface border-edge text-label ")))
-                              (when past? "opacity-40"))
-                  :style (stacked-style b)}
-            (when now?
-              ($ :span {:class (str "absolute left-2 top-1.5 text-[10px] font-black uppercase tracking-[0.18em] "
-                                    (if open? "text-now" "text-white"))}
-                 "Now"))
-            ($ :span {:class (str "text-[14px] font-semibold leading-tight " (when open? "opacity-60"))}
-               (:name b)))))))
+                          now?  "bg-now border-now text-white z-10 shadow-md "
+                          :else "bg-surface border-edge text-label ")
+                        (when past? "opacity-40 "))]
+         (if open?
+           ($ :div {:key (:id b) :class cls :style (stacked-style b)}
+              ($ block-name {:now? now? :open? true :name (:name b)}))
+           ($ :button {:key (:id b)
+                       :on-click #(on-toggle (:id b))
+                       :aria-pressed (boolean done?)
+                       :aria-label (:name b)
+                       :class (str cls "cursor-pointer touch-manipulation transition-colors duration-100 active:scale-[0.99] ")
+                       :style (stacked-style b)}
+              (if done?
+                ($ :span {:class "text-[20px] font-black leading-none text-white"} "✓")
+                ($ block-name {:now? now? :open? false :name (:name b)}))))))))
 
 (defui now-line [{:keys [now-off now-min]}]
   (when now-off
@@ -73,11 +88,12 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view []
-  (let [container-ref (use-ref)
+(defui timetable [{:keys [today]}]
+  (let [[schedule toggle] (store/use-store today seed-schedule)
+        container-ref (use-ref)
         [now-min] (use-state now-minutes)
         [avail set-avail!] (use-state #(max 300 (- (.-innerHeight js/window) 200)))
-        laid (layout/fit-layout seed-schedule (- avail (* 2 label-slack)))
+        laid (layout/fit-layout schedule (- avail (* 2 label-slack)))
         now-off (layout/offset-at laid now-min)
         current-id (:id (some #(when (and (>= now-min (:s %)) (< now-min (:e %))) %) laid))]
     (use-layout-effect
@@ -93,5 +109,8 @@
     ($ :div {:ref container-ref :class "no-scrollbar overflow-y-auto px-6 py-3" :style #js {:height avail}}
        ($ :div {:class "relative mx-auto" :style #js {:width column-width :height (layout/total-h laid)}}
           ($ gutter-times {:laid laid :now-min now-min :current-id current-id})
-          ($ blocks {:laid laid :now-min now-min :current-id current-id})
+          ($ blocks {:laid laid :now-min now-min :current-id current-id :on-toggle toggle})
           ($ now-line {:now-off now-off :now-min now-min})))))
+
+(defui view [{:keys [today]}]
+  ($ timetable {:key (dates/iso-date today) :today today}))

@@ -67,7 +67,7 @@
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
           ($ :section {:class "w-full shrink-0 snap-center wide:hidden"}
-             ($ day/view))
+             ($ day/view {:today today}))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today})))
