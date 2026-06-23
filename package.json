@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.33.2",
   "scripts": {
     "dev": "concurrently -k -n cljs,css \"shadow-cljs watch app\" \"tailwindcss -i src/css/main.css -o public/css/main.css --watch\"",
+    "prototype": "concurrently -k -n cljs,css \"shadow-cljs watch prototype\" \"tailwindcss -i src/css/main.css -o public/css/main.css --watch\"",
     "build": "shadow-cljs release app && tailwindcss -i src/css/main.css -o public/css/main.css --minify",
     "test": "shadow-cljs compile test && node out/node-tests.js",
     "lint": "clj-kondo --lint src test",

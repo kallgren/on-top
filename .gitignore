@@ -2,6 +2,7 @@ node_modules/
 .shadow-cljs/
 out/
 public/js/
+public/js-prototype/
 public/css/
 .DS_Store
 .cpcache/
