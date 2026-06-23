@@ -7,12 +7,4 @@
                               :http-port 8080}}
           :test {:target    :node-test
                  :output-to "out/node-tests.js"
-                 :ns-regexp "-test$"}
-
-          ;; THROWAWAY — Day timetable UI prototype. Delete with src/app/day/prototype.cljs.
-          :prototype {:target     :browser
-                      :output-dir "public/js-prototype"
-                      :asset-path "/js-prototype"
-                      :modules    {:proto {:init-fn app.day.prototype/init}}
-                      :devtools   {:http-root "public"
-                                   :http-port 8081}}}}
+                 :ns-regexp "-test$"}}}
