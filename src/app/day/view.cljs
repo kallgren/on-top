@@ -1,5 +1,5 @@
 (ns app.day.view
-  (:require [uix.core :refer [defui $ use-state use-effect]]
+  (:require [uix.core :refer [defui $ use-state use-ref use-layout-effect]]
             [app.day.layout :as layout]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
@@ -10,6 +10,8 @@
 
 (def column-width 248)
 (def gutter-width 56)
+(def pane-dots-reserve 56)
+(def label-slack 12)
 
 (defn- now-minutes []
   (let [d (js/Date.)]
@@ -72,19 +74,23 @@
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui view []
-  (let [[now-min] (use-state now-minutes)
-        [vh set-vh!] (use-state #(.-innerHeight js/window))
-        avail (max 300 (- vh 150))
-        laid (layout/fit-layout seed-schedule avail)
+  (let [container-ref (use-ref)
+        [now-min] (use-state now-minutes)
+        [avail set-avail!] (use-state #(max 300 (- (.-innerHeight js/window) 200)))
+        laid (layout/fit-layout seed-schedule (- avail (* 2 label-slack)))
         now-off (layout/offset-at laid now-min)
         current-id (:id (some #(when (and (>= now-min (:s %)) (< now-min (:e %))) %) laid))]
-    (use-effect
+    (use-layout-effect
      (fn []
-       (let [on-resize #(set-vh! (.-innerHeight js/window))]
-         (.addEventListener js/window "resize" on-resize)
-         #(.removeEventListener js/window "resize" on-resize)))
+       (let [measure (fn []
+                       (when-let [el @container-ref]
+                         (let [top (.. el getBoundingClientRect -top)]
+                           (set-avail! (max 300 (- (.-innerHeight js/window) top pane-dots-reserve))))))]
+         (measure)
+         (.addEventListener js/window "resize" measure)
+         #(.removeEventListener js/window "resize" measure)))
      [])
-    ($ :div {:class "no-scrollbar overflow-y-auto px-6 py-2" :style #js {:maxHeight avail}}
+    ($ :div {:ref container-ref :class "no-scrollbar overflow-y-auto px-6 py-3" :style #js {:height avail}}
        ($ :div {:class "relative mx-auto" :style #js {:width column-width :height (layout/total-h laid)}}
           ($ gutter-times {:laid laid :now-min now-min :current-id current-id})
           ($ blocks {:laid laid :now-min now-min :current-id current-id})
