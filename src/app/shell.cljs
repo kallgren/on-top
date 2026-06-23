@@ -104,7 +104,9 @@
        ($ :div {:class "absolute inset-y-0 left-0 w-4"
                 :on-mouse-enter #(set-open! true)})
        ($ :div {:class (str "absolute inset-y-0 left-0 w-[360px] bg-page "
-                            (if open? "translate-x-0" "-translate-x-full pointer-events-none"))
+                            (if open?
+                              "translate-x-0 shadow-[6px_0_30px_-4px_rgba(0,0,0,0.25)] "
+                              "-translate-x-full pointer-events-none"))
                 :on-mouse-leave #(set-open! false)}
           ($ :div {:class "px-6 pt-12 pb-6 text-center text-[15px] font-bold uppercase tracking-[0.24em] text-muted"}
              "Daily schedule")
