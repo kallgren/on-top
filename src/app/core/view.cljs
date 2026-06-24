@@ -29,10 +29,10 @@
                   "cursor-pointer select-none touch-manipulation active:scale-[0.98] "
                   "transition-colors duration-100 [container-type:inline-size] "
                   (cond
-                    done?      "bg-done border-done"
-                    at-cursor? "bg-surface-hover border-edge"
-                    :else      "bg-surface border-edge hover:bg-surface-hover")
-                  (when at-cursor? (str " " cursor/cursor-ring)))}
+                    (and done? at-cursor?) "bg-done border-cursor"
+                    done?                  "bg-done border-done"
+                    at-cursor?             "bg-surface-hover border-cursor"
+                    :else                  "bg-surface border-edge hover:bg-surface-hover"))}
      (if done?
        ($ :span {:class "font-bold leading-none text-white text-check-fluid"}
           "✓")

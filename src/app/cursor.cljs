@@ -12,7 +12,7 @@
 
 ;; The woken Cursor's look: the resting hover face plus a ring. One swappable
 ;; token — recolour the ring here and every Surface that lands the Cursor follows.
-(def cursor-ring "ring-2 ring-cue")
+(def cursor-ring "ring-2 ring-cursor")
 
 ;; ── Decisions ────────────────────────────────────────────────────────────────
 
