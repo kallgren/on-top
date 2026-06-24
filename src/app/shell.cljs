@@ -66,9 +66,10 @@
         [cursor-pane set-cursor-pane!] (use-state :core)
         ;; A counter both Surfaces watch: bumping it pulls them back to dormant.
         [reset-nonce set-reset-nonce!] (use-state 0)
-        ;; Esc or a mouse click resets the Cursor to its cold-start spot — pane
-        ;; back to Core and both Surfaces asleep — whichever Pane held it. Stable
-        ;; so the Surfaces' pointerdown listener isn't re-bound every render.
+        ;; Esc, a mouse click, or hiding Rare out from under the Cursor resets it
+        ;; to the cold-start spot — pane back to Core and both Surfaces asleep —
+        ;; whichever Pane held it. Stable so the Surfaces' pointerdown listener
+        ;; isn't re-bound every render.
         dismiss (use-callback
                  (fn []
                    (set-cursor-pane! :core)
@@ -92,14 +93,15 @@
      [])
     (keybinding/use-hotkey
      "r"
-     ;; Hiding Rare pulls the Cursor back to Core so no ring is stranded on a
-     ;; hidden Pane; Rare keeps its remembered row, so reopening with `l` lands
-     ;; the Cursor right back where it left off.
+     ;; Hiding Rare out from under the Cursor would strand a ring on a Pane
+     ;; that's gone, so it falls back to the cold-start spot — dormant, pane
+     ;; back to Core — and the next navigation key wakes it on Core. Rare
+     ;; forgets its row, so reopening with `l` lands on the first row.
      (fn []
        (let [hiding? (not rare-hidden?)]
          (set-rare-hidden! hiding?)
          (when (and hiding? (= cursor-pane :rare))
-           (set-cursor-pane! :core)))))
+           (dismiss)))))
     ($ :<>
        ($ :div {:ref scroll-ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "

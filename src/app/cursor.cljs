@@ -52,9 +52,9 @@
    `:active?` (only the active Surface binds keys, so a single cursor is shared),
    `:on-exit-left` / `:on-exit-right` fired on `h`/`l`, `:on-dismiss` fired on Esc
    or a mouse click, and `:reset-nonce` — a counter the shell bumps to pull every
-   Surface back to dormant. A hidden Pane keeps its remembered row, so reopening
-   lands the Cursor back where it left off. Returns the row the Cursor is on, or
-   nil while dormant or inactive."
+   Surface back to dormant. Going inactive keeps a Surface's remembered row; only
+   a reset clears it. Returns the row the Cursor is on, or nil while dormant or
+   inactive."
   [rows toggle {:keys [active? on-exit-left on-exit-right on-dismiss reset-nonce]}]
   (let [rows (vec rows)
         n    (count rows)
