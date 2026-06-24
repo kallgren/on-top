@@ -18,11 +18,11 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-(defui task-button [{:keys [id text done? on-toggle]}]
+(defui task-button [{:keys [id name done? on-toggle]}]
   ($ :button
      {:on-click #(on-toggle id)
       :aria-pressed done?
-      :aria-label text
+      :aria-label name
       :class (str "flex aspect-[2/1] w-full items-center justify-center "
                   "overflow-hidden rounded-2xl border-2 px-6 "
                   "cursor-pointer select-none touch-manipulation active:scale-[0.98] "
@@ -34,7 +34,7 @@
        ($ :span {:class "font-bold leading-none text-white text-check-fluid"}
           "✓")
        ($ :span {:class "font-bold text-label text-center text-label-fluid"}
-          text))))
+          name))))
 
 (defui scroll-cue [{:keys [show?]}]
   (when show?
@@ -57,8 +57,8 @@
     ($ :section {:key (str cat) :class "contents"}
        ($ :h2 {:class "px-1 text-left text-[15px] font-semibold uppercase tracking-[0.2em] text-heading"}
           label)
-       (for [{:keys [id text done?]} ts]
-         ($ task-button {:key id :id id :text text
+       (for [{:keys [id name done?]} ts]
+         ($ task-button {:key id :id id :name name
                          :done? done?
                          :on-toggle toggle})))))
 

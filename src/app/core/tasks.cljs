@@ -5,8 +5,8 @@
   (let [parity (week-parity date)
         wd     (weekday-kw (.getDay date))]
     (for [cat               category-keys
-          {:keys [id text]} (get-in schedule [cat parity wd])]
-      {:category cat :id id :text text})))
+          {:keys [id name]} (get-in schedule [cat parity wd])]
+      {:category cat :id id :name name})))
 
 (defn- day-before [date]
   (js/Date. (.getFullYear date) (.getMonth date) (dec (.getDate date))))
