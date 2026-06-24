@@ -87,11 +87,12 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui day-view [{:keys [today schedule active? on-exit-right]}]
+(defui day-view [{:keys [today schedule active? on-exit-right on-dismiss reset-nonce]}]
   (let [category-keys (map first categories)
         [tasks toggle] (store/use-store today schedule category-keys)
         focused (cursor/use-list-cursor tasks #(toggle (:id %))
-                                        {:active? active? :on-exit-right on-exit-right})
+                                        {:active? active? :on-exit-right on-exit-right
+                                         :on-dismiss on-dismiss :reset-nonce reset-nonce})
         cursor-id (:id focused)
         content-ref (use-ref)
         more? (use-overflow? content-ref)
@@ -103,7 +104,8 @@
             ($ task-list {:by-category by-category :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))
 
-(defui view [{:keys [today active? on-exit-right]}]
+(defui view [{:keys [today active? on-exit-right on-dismiss reset-nonce]}]
   (let [schedule (sched/use-schedule :core-schedule-url schedule-cache-key seed-schedule)]
     ($ day-view {:key (dates/iso-date today) :today today :schedule schedule
-                 :active? active? :on-exit-right on-exit-right})))
+                 :active? active? :on-exit-right on-exit-right
+                 :on-dismiss on-dismiss :reset-nonce reset-nonce})))

@@ -1,5 +1,5 @@
 (ns app.shell
-  (:require [uix.core :refer [defui $ use-state use-ref use-effect use-layout-effect]]
+  (:require [uix.core :refer [defui $ use-state use-ref use-effect use-layout-effect use-callback]]
             [uix.dom]
             [app.config :as config]
             [app.core.view :as core]
@@ -63,7 +63,17 @@
         ;; Which Pane holds the one keyboard Cursor. Core by default, so the cold
         ;; start wakes there; only the active Surface binds the within-Pane keys,
         ;; so a single Cursor is guaranteed.
-        [cursor-pane set-cursor-pane!] (use-state :core)]
+        [cursor-pane set-cursor-pane!] (use-state :core)
+        ;; A counter both Surfaces watch: bumping it pulls them back to dormant.
+        [reset-nonce set-reset-nonce!] (use-state 0)
+        ;; Esc or a mouse click resets the Cursor to its cold-start spot — pane
+        ;; back to Core and both Surfaces asleep — whichever Pane held it. Stable
+        ;; so the Surfaces' pointerdown listener isn't re-bound every render.
+        dismiss (use-callback
+                 (fn []
+                   (set-cursor-pane! :core)
+                   (set-reset-nonce! inc))
+                 [])]
     (use-layout-effect
      (fn []
        (let [el @scroll-ref]
@@ -83,7 +93,8 @@
     (keybinding/use-hotkey
      "r"
      ;; Hiding Rare pulls the Cursor back to Core so no ring is stranded on a
-     ;; hidden Pane; Rare's `:dormant?` then makes it forget where it was.
+     ;; hidden Pane; Rare keeps its remembered row, so reopening with `l` lands
+     ;; the Cursor right back where it left off.
      (fn []
        (let [hiding? (not rare-hidden?)]
          (set-rare-hidden! hiding?)
@@ -99,6 +110,8 @@
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today
                               :active? (= cursor-pane :core)
+                              :on-dismiss dismiss
+                              :reset-nonce reset-nonce
                               ;; Core is leftmost: `h` stays put. `l` reveals Rare
                               ;; if hidden and crosses the Cursor into it.
                               :on-exit-right (fn []
@@ -109,7 +122,8 @@
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
                 ($ rare/view {:today today
                               :active? (= cursor-pane :rare)
-                              :dormant? rare-hidden?
+                              :on-dismiss dismiss
+                              :reset-nonce reset-nonce
                               ;; Rare is rightmost: `l` stays put. `h` crosses back.
                               :on-exit-left #(set-cursor-pane! :core)}))))
        ($ pane-dots {:active active

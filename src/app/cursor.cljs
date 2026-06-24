@@ -50,14 +50,17 @@
   "Owns one Surface's cursor over `rows` (its ordered navigable rows) and toggles
    the row the Cursor is on via `(toggle row)`. Shell wiring rides in `opts`:
    `:active?` (only the active Surface binds keys, so a single cursor is shared),
-   `:dormant?` (a hidden Pane forgets where the Cursor was), and `:on-exit-left`
-   / `:on-exit-right` fired on `h`/`l`. Returns the row the Cursor is on, or nil
-   while dormant or inactive."
-  [rows toggle {:keys [active? dormant? on-exit-left on-exit-right]}]
+   `:on-exit-left` / `:on-exit-right` fired on `h`/`l`, `:on-dismiss` fired on Esc
+   or a mouse click, and `:reset-nonce` — a counter the shell bumps to pull every
+   Surface back to dormant. A hidden Pane keeps its remembered row, so reopening
+   lands the Cursor back where it left off. Returns the row the Cursor is on, or
+   nil while dormant or inactive."
+  [rows toggle {:keys [active? on-exit-left on-exit-right on-dismiss reset-nonce]}]
   (let [rows (vec rows)
         n    (count rows)
         [cursor set-cursor!] (use-state nil)
-        was-active? (use-ref active?)]
+        was-active? (use-ref active?)
+        seen-reset  (use-ref reset-nonce)]
     (use-hotkey "j" #(when active? (set-cursor! (fn [c] (next-cursor c 1 n)))))
     (use-hotkey "k" #(when active? (set-cursor! (fn [c] (next-cursor c -1 n)))))
     (use-hotkey "e" #(when active?
@@ -65,22 +68,25 @@
                          (toggle row))))
     (use-hotkey "h" #(when (and active? on-exit-left) (on-exit-left)))
     (use-hotkey "l" #(when (and active? on-exit-right) (on-exit-right)))
-    (use-hotkey "Escape" #(when active? (set-cursor! nil)))
+    (use-hotkey "Escape" #(when (and active? on-dismiss) (on-dismiss)))
     (use-effect
-     ;; Crossing in (this Surface just became active): restore the remembered row
-     ;; clamped to the current list, or land on the first row. The ref skips the
-     ;; cold start, where the default Pane is active from mount but stays dormant.
+     ;; One effect owns where the Cursor lands when the world shifts under it:
+     ;; - A reset (Esc or a mouse click bumped the shell's nonce) pulls this
+     ;;   Surface back to dormant. Checked first, so a dismiss that also flips this
+     ;;   Surface active — the Cursor was in the other Pane — leaves it asleep
+     ;;   rather than waking on the cross, no matter the effect order.
+     ;; - Otherwise crossing in (this Surface just became active) restores the
+     ;;   remembered row clamped to the list, or lands on the first row. The ref
+     ;;   skips the cold start, where the default Pane is active from mount but
+     ;;   stays dormant.
      (fn []
-       (when (and active? (not @was-active?))
-         (set-cursor! (fn [c] (wake c n))))
-       (reset! was-active? active?))
-     [active? n])
-    (use-effect
-     ;; A hidden Pane forgets where the Cursor was, so revealing it starts fresh
-     ;; rather than restoring a stale spot.
-     (fn []
-       (when dormant? (set-cursor! nil)))
-     [dormant?])
+       (let [reset? (not= reset-nonce @seen-reset)]
+         (reset! seen-reset reset-nonce)
+         (cond
+           reset?                           (set-cursor! nil)
+           (and active? (not @was-active?)) (set-cursor! (fn [c] (wake c n))))
+         (reset! was-active? active?)))
+     [active? n reset-nonce])
     (use-effect
      ;; A shrinking list — a toggled Rare row leaving, a late Schedule load —
      ;; keeps the Cursor on a real row instead of pointing past the end.
@@ -92,10 +98,10 @@
      ;; drops native focus. The listener only lives while the Cursor is awake,
      ;; so touch taps — where it never wakes — never pay for it.
      (fn []
-       (when (and active? cursor)
-         (let [dismiss #(set-cursor! nil)]
+       (when (and active? cursor on-dismiss)
+         (let [dismiss #(on-dismiss)]
            (.addEventListener js/window "pointerdown" dismiss)
            #(.removeEventListener js/window "pointerdown" dismiss))))
-     [active? cursor])
+     [active? cursor on-dismiss])
     (when active?
       (get rows cursor))))
