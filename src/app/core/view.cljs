@@ -1,6 +1,7 @@
 (ns app.core.view
   (:require [uix.core :refer [defui defhook $ use-state use-effect use-ref]]
             [app.core.store :as store]
+            [app.cursor :as cursor]
             [app.date-utils :as dates]
             [app.shared.schedule :as sched]
             [cljs.reader :as reader]
@@ -18,7 +19,7 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-(defui task-button [{:keys [id name done? on-toggle]}]
+(defui task-button [{:keys [id name done? at-cursor? on-toggle]}]
   ($ :button
      {:on-click #(on-toggle id)
       :aria-pressed done?
@@ -27,9 +28,11 @@
                   "overflow-hidden rounded-2xl border-2 px-6 "
                   "cursor-pointer select-none touch-manipulation active:scale-[0.98] "
                   "transition-colors duration-100 [container-type:inline-size] "
-                  (if done?
-                    "bg-done border-done"
-                    "bg-surface border-edge hover:bg-surface-hover"))}
+                  (cond
+                    (and done? at-cursor?) "bg-done border-cursor"
+                    done?                  "bg-done border-done"
+                    at-cursor?             "bg-surface-hover border-cursor"
+                    :else                  "bg-surface border-edge hover:bg-surface-hover"))}
      (if done?
        ($ :span {:class "font-bold leading-none text-white text-check-fluid"}
           "✓")
@@ -50,7 +53,7 @@
   ($ :p {:class "py-20 text-center text-[17px] font-medium italic text-muted tracking-wide text-inset"}
      "You're on top :)"))
 
-(defui task-list [{:keys [by-category toggle]}]
+(defui task-list [{:keys [by-category toggle cursor-id]}]
   (for [[cat label] categories
         :let [ts (by-category cat)]
         :when (seq ts)]
@@ -60,6 +63,7 @@
        (for [{:keys [id name done?]} ts]
          ($ task-button {:key id :id id :name name
                          :done? done?
+                         :at-cursor? (= id cursor-id)
                          :on-toggle toggle})))))
 
 ;; ── Hooks ────────────────────────────────────────────────────────────────────
@@ -83,9 +87,11 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui day-view [{:keys [today schedule]}]
+(defui day-view [{:keys [today schedule cursor]}]
   (let [category-keys (map first categories)
         [tasks toggle] (store/use-store today schedule category-keys)
+        focused (cursor/use-list-cursor tasks #(toggle (:id %)) cursor)
+        cursor-id (:id focused)
         content-ref (use-ref)
         more? (use-overflow? content-ref)
         by-category (group-by :category tasks)]
@@ -93,9 +99,10 @@
        ($ :div {:ref content-ref :class "flex w-full flex-col gap-4 px-1 py-2"}
           (if (empty? by-category)
             ($ empty-state)
-            ($ task-list {:by-category by-category :toggle toggle})))
+            ($ task-list {:by-category by-category :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))
 
-(defui view [{:keys [today]}]
+(defui view [{:keys [today cursor]}]
   (let [schedule (sched/use-schedule :core-schedule-url schedule-cache-key seed-schedule)]
-    ($ day-view {:key (dates/iso-date today) :today today :schedule schedule})))
+    ($ day-view {:key (dates/iso-date today) :today today :schedule schedule
+                 :cursor cursor})))

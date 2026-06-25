@@ -1,5 +1,7 @@
 (ns app.timer
-  (:require [uix.core :refer [defui $ use-state use-effect]]))
+  (:require [uix.core :refer [defui $ use-state use-effect]]
+            [app.keybinding :refer [use-hotkey]]
+            [app.keymap :as keymap]))
 
 (def timer-secs (* 30 60))
 
@@ -11,7 +13,12 @@
 (defui timer []
   (let [[end-at set-end-at] (use-state nil)
         [left set-left]     (use-state timer-secs)
-        done? (and (some? end-at) (zero? left))]
+        done? (and (some? end-at) (zero? left))
+        start! (fn []
+                 (set-left timer-secs)
+                 (set-end-at (+ (js/Date.now) (* timer-secs 1000))))
+        stop! #(set-end-at nil)]
+    (use-hotkey (keymap/key-of :toggle-timer) #(if end-at (stop!) (start!)))
     (use-effect
      (fn []
        (when end-at
@@ -35,14 +42,13 @@
                             "text-[19px] font-bold uppercase tracking-[0.2em] text-white"
                             "text-[34px] font-bold tabular-nums tracking-wide text-label")}
             (if done? "Time's up" (mmss left)))
-         ($ :button {:on-click #(set-end-at nil)
+         ($ :button {:on-click stop!
                      :aria-label "Close timer"
                      :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
                                  "text-[22px] leading-none transition-colors "
                                  (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
             "✕"))
-      ($ :button {:on-click #(do (set-left timer-secs)
-                                 (set-end-at (+ (js/Date.now) (* timer-secs 1000))))
+      ($ :button {:on-click start!
                   :aria-label "Start 30-minute timer"
                   :class (str "fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] right-7 z-20 "
                               "flex h-16 w-16 items-center justify-center rounded-full "

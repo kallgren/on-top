@@ -50,6 +50,15 @@ One Pane per Surface today.
 _Avoid_: using "Pane" for the Surface concept or a completion's tag (that's the
 Surface)
 
+**Cursor**:
+The single keyboard point of attention. At most one **Task** is focused at any
+moment, in exactly one **Pane**. The Cursor is **dormant** until the first
+navigation key wakes it; vertical keys move it within a Pane, horizontal keys
+move the one Cursor across the Pane boundary. A view-layer term (like **Pane**),
+not a domain one — it tags nothing, computes nothing, and is never stored. A
+keyboard affordance only: it has no meaning on a touch layout.
+_Avoid_: selection, focus (the DOM sense), highlight, active row, hovered row
+
 ## Shared language
 
 These terms mean the same thing on both surfaces. Each surface adds its own

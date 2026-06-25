@@ -15,6 +15,7 @@
   --color-muted: #9a917b;         /* de-emphasised text: wordmark, date, empty state */
   --color-cue: #1a1712;           /* scroll-down chevron */
   --color-now: #1f6feb;           /* Day now-line, current block, current time */
+  --color-cursor: #60a5fa;        /* keyboard Cursor ring */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,6 +30,7 @@
     --color-muted: #6e7c98;         /* de-emphasised text */
     --color-cue: #c4cfe3;           /* light chevron on dark */
     --color-now: #5b9dff;           /* brighter now-blue on dark */
+    --color-cursor: #8cc2ff;        /* brighter ring to pop on navy */
   }
 }
 
