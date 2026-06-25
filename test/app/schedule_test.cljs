@@ -21,3 +21,29 @@
         seed   {:digital {:week-odd {:monday ["Seed"]}}}]
     (is (= cached (schedule/resolve-schedule cached seed)))
     (is (= seed (schedule/resolve-schedule nil seed)))))
+
+(deftest schedule-source-paints-cached-edn-over-seed
+  (let [seed {:digital {:week-odd {:monday ["Seed"]}}}]
+    (is (= {:digital {:week-odd {:monday ["Cached"]}}}
+           (:initial (schedule/schedule-source
+                      {:config-url "https://gist.example/x"
+                       :cached     "{:digital {:week-odd {:monday [\"Cached\"]}}}"
+                       :seed       seed}))))))
+
+(deftest schedule-source-falls-back-to-seed-without-a-cache
+  (let [seed {:digital {:week-odd {:monday ["Seed"]}}}]
+    (is (= seed (:initial (schedule/schedule-source
+                           {:config-url "https://gist.example/x" :cached nil :seed seed})))
+        "no cache → the seed floor")
+    (is (= seed (:initial (schedule/schedule-source
+                           {:config-url "https://gist.example/x" :cached "{:not closed" :seed seed})))
+        "unparseable cache never poisons the painted Schedule")))
+
+(deftest schedule-source-targets-the-configured-gist-url
+  (is (= "https://gist.example/rare"
+         (:url (schedule/schedule-source
+                {:config-url "https://gist.example/rare" :cached nil :seed {}})))))
+
+(deftest schedule-source-has-no-url-when-the-surface-gist-is-unconfigured
+  (is (nil? (:url (schedule/schedule-source {:config-url nil :cached nil :seed {}}))))
+  (is (nil? (:url (schedule/schedule-source {:config-url "" :cached nil :seed {}})))))

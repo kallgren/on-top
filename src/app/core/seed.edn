@@ -1,0 +1,37 @@
+;; On Top — the Core routine schedule.
+;;
+;; Two-week cycle keyed by category (:digital / :household), then by ISO
+;; week-number parity (:week-odd / :week-even), then by weekday.
+;; Each task is {:id :name}: :id is the stable identity that done-through history
+;; hangs off, :name is the display label and can be reworded freely.
+;; An :id appears at most once within a day; the same :id recurs across days.
+;; Weekly tasks are duplicated across both weeks (no shared :weekly section).
+{:digital
+ {:week-odd
+  {:monday    [{:id "gmail" :name "Gmail inbox"}]
+   :tuesday   [{:id "todoist" :name "Todoist inbox"}]
+   :wednesday [{:id "downloads" :name "Clean Downloads folder"}
+               {:id "desktop" :name "Clean Desktop folder"}]
+   :thursday  [{:id "gmail" :name "Gmail inbox"}]
+   :sunday    [{:id "calendar" :name "Review calendar (2w back/4w forward)"}
+               {:id "waiting" :name "Review Waiting for & Package tracking"}]}
+
+  :week-even
+  {:monday    [{:id "gmail" :name "Gmail inbox"}]
+   :tuesday   [{:id "physical-inbox" :name "Physical inbox"}]
+   :wednesday [{:id "photo-inbox" :name "Photo inbox"}
+               {:id "screenshots" :name "Review recent screenshots"}]
+   :thursday  [{:id "gmail" :name "Gmail inbox"}]
+   :friday    [{:id "tabs" :name "Review open tabs on phone"}]
+   :sunday    [{:id "calendar" :name "Review calendar (2w back/4w forward)"}
+               {:id "waiting" :name "Review Waiting for & Package tracking"}]}}
+
+ :household
+ {:week-odd
+  {:monday    [{:id "bathroom" :name "Bathroom"}]
+   :thursday  [{:id "dust" :name "Dust"}]
+   :sunday    [{:id "towels" :name "Bath towels"}]}
+
+  :week-even
+  {:wednesday [{:id "vacuum" :name "Vacuum"}]
+   :sunday    [{:id "towels" :name "Bath towels"}]}}}

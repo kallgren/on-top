@@ -44,15 +44,26 @@
 (deftest parse-completions-of-nil-is-nil
   (is (nil? (sync/parse-completions nil))))
 
+(deftest select-query-filters-the-fetch-to-one-surface
+  (is (= "?select=task_id,done_through&surface=eq.core" (sync/select-query "core")))
+  (is (= "?select=task_id,done_through&surface=eq.rare" (sync/select-query "rare")))
+  (is (not= (sync/select-query "core") (sync/select-query "rare"))
+      "each surface hydrates only its own rows, so a shared task id never crosses over"))
+
 (deftest mark-dirty-adds-a-toggled-id-to-the-outbox
   (is (= #{"gmail"} (sync/mark-dirty #{} "gmail")))
   (is (= #{"gmail" "dishes"} (sync/mark-dirty #{"gmail"} "dishes"))))
 
-(deftest flush-payload-builds-an-upsert-row-per-dirty-id
-  (is (= #{{"task_id" "gmail" "done_through" "2026-06-18"}
-           {"task_id" "dishes" "done_through" "2026-06-17"}}
-         (set (sync/flush-payload #{"gmail" "dishes"}
+(deftest flush-payload-builds-a-surface-tagged-upsert-row-per-dirty-id
+  (is (= #{{"surface" "core" "task_id" "gmail" "done_through" "2026-06-18"}
+           {"surface" "core" "task_id" "dishes" "done_through" "2026-06-17"}}
+         (set (sync/flush-payload "core" #{"gmail" "dishes"}
                                   {"gmail" "2026-06-18" "dishes" "2026-06-17" "trash" "2026-06-10"})))))
+
+(deftest flush-payload-keeps-a-shared-task-id-distinct-across-surfaces
+  (is (not= (sync/flush-payload "core" #{"gmail"} {"gmail" "2026-06-18"})
+            (sync/flush-payload "rare" #{"gmail"} {"gmail" "2026-06-18"}))
+      "same task id on two surfaces upserts two distinct (surface, task_id) rows"))
 
 (deftest clear-pending-drops-confirmed-ids
   (is (= #{} (sync/clear-pending #{"gmail" "dishes"} #{"gmail" "dishes"}))))

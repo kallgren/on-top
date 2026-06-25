@@ -12,6 +12,15 @@
 (defn resolve-schedule [cached seed]
   (or cached seed))
 
+(defn schedule-source
+  "Resolve one surface's Schedule source from its inputs: the Schedule to paint
+   now — last-good cached EDN over the compiled-in seed floor — and the gist
+   `:url` to revalidate from, or nil when unconfigured so the surface simply
+   stays on cache/seed. See docs/adr/0010."
+  [{:keys [config-url cached seed]}]
+  {:initial (resolve-schedule (parse-schedule cached) seed)
+   :url     (not-empty config-url)})
+
 (defn fetch-schedule! [url on-ok]
   (-> (js/fetch url)
       (.then (fn [res]

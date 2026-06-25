@@ -22,11 +22,12 @@ Then open http://localhost:8080.
 
 ## Configuration
 
-Runtime settings live in a single device-local JSON blob under the `on-top/config` localStorage key (see `docs/adr/0007`). Every key is optional — an unconfigured app stays purely local, painting from the seed schedule with no remote sync.
+Runtime settings live in a single device-local JSON blob under the `on-top/config` localStorage key (see `docs/adr/0007`). Every key is optional — an unconfigured app stays purely local, painting from each surface's seed schedule with no remote sync.
 
 | Key | Purpose |
 | --- | --- |
-| `scheduleUrl` | Gist URL for a custom schedule — see [Custom schedule](#custom-schedule) |
+| `coreScheduleUrl` | Gist URL for a custom Core schedule — see [Custom schedule](#custom-schedule) |
+| `rareScheduleUrl` | Gist URL for a custom Rare schedule — see [Custom schedule](#custom-schedule) |
 | `completionsDbUrl` | Supabase REST endpoint for the completions table — see [Completion sync](#completion-sync-supabase) |
 | `supabasePublishableKey` | Supabase publishable key |
 
@@ -36,7 +37,8 @@ Set it in the browser devtools console. To avoid clobbering keys you've already 
 const config = JSON.parse(localStorage.getItem("on-top/config") ?? "{}")
 localStorage.setItem("on-top/config", JSON.stringify({
   ...config,
-  scheduleUrl: "https://gist.githubusercontent.com/.../raw/schedule.edn",
+  coreScheduleUrl: "https://gist.githubusercontent.com/.../raw/core-schedule.edn",
+  rareScheduleUrl: "https://gist.githubusercontent.com/.../raw/rare-schedule.edn",
   completionsDbUrl: "https://<project>.supabase.co/rest/v1/completions",
   supabasePublishableKey: "<publishable-key>"
 }))
@@ -46,16 +48,16 @@ Unknown keys are ignored (and logged). Seeding is one-time per device; there's n
 
 ## Custom schedule
 
-The schedule shipped with the app is the seed in `src/app/seed.edn`. You can override it at runtime — without redeploying — by setting `scheduleUrl` in the [config blob](#configuration) to a [GitHub gist](https://gist.github.com) holding EDN of the same shape as `seed.edn`.
+Each surface ships with its own seed schedule (`src/app/core/seed.edn` and `src/app/rare/seed.edn`). You can override either at runtime — without redeploying — by pointing its config key at a [GitHub gist](https://gist.github.com) holding EDN of the same shape as that surface's seed. Core reads `coreScheduleUrl`, Rare reads `rareScheduleUrl`; each surface fetches its own gist independently, so you can edit one routine without the other in front of you.
 
-1. Create a gist with your schedule as an EDN file.
+1. Create a gist with one surface's schedule as an EDN file.
 2. Grab its **raw-latest** URL — the raw link with the commit hash removed, so it always serves the newest revision:
    ```
    https://gist.githubusercontent.com/<user>/<id>/raw/<file>.edn
    ```
-3. Store it as `scheduleUrl` in `on-top/config` (see [Configuration](#configuration)).
+3. Store it as `coreScheduleUrl` or `rareScheduleUrl` in `on-top/config` (see [Configuration](#configuration)).
 
-On every load the app paints instantly from the last good copy (or the seed), then fetches the gist in the background and swaps it in. If the gist is missing, unreachable, or not valid EDN, the app keeps the last good schedule and falls back to the seed — the reason is logged to the console. To revert to the seed, drop `scheduleUrl` from the config blob and clear the cached copy (`on-top/schedule-cache`); removing only the URL stops refreshing but the last cached gist still shows.
+On every load each surface paints instantly from its last good copy (or its seed), then fetches its gist in the background and swaps it in. If a gist is missing, unreachable, or not valid EDN, that surface keeps its last good schedule and falls back to its seed — the reason is logged to the console. To revert a surface to its seed, drop its URL from the config blob and clear its cached copy (`on-top/core-schedule-cache` or `on-top/rare-schedule-cache`); removing only the URL stops refreshing but the last cached gist still shows.
 
 ## Completion sync (Supabase)
 
@@ -69,8 +71,10 @@ Run this once in the Supabase SQL editor to create the table and its policies. C
 drop table if exists completions;
 
 create table completions (
-  task_id      text primary key,
-  done_through date
+  surface      text not null,
+  task_id      text not null,
+  done_through date not null,
+  primary key (surface, task_id)
 );
 
 alter table completions enable row level security;
@@ -80,7 +84,7 @@ create policy "anon insert" on completions for insert with check (true);
 create policy "anon update" on completions for update using (true) with check (true);
 ```
 
-The app talks to PostgREST with the publishable key over raw `fetch`. Toggling a task issues an upsert (`INSERT … ON CONFLICT DO UPDATE`), so it needs **both** `insert` and `update` policies — `insert` validates the new row via `with check`, `update` gates existing rows via `using`. There's no delete path, so no delete policy. `task_id` is the primary key the upsert resolves the conflict onto.
+The app talks to PostgREST with the publishable key over raw `fetch`. Toggling a task issues an upsert (`INSERT … ON CONFLICT DO UPDATE`), so it needs **both** `insert` and `update` policies — `insert` validates the new row via `with check`, `update` gates existing rows via `using`. There's no delete path, so no delete policy. `(surface, task_id)` is the composite primary key the upsert resolves the conflict onto, so a task id reused across surfaces never clobbers (see `docs/adr/0009`).
 
 ### Pointing the app at it
 
