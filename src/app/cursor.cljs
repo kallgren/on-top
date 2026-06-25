@@ -8,7 +8,8 @@
    Cursor is on. A view-layer concern only — inert on touch since the keys never
    fire."
   (:require [uix.core :refer [defhook use-state use-effect use-ref]]
-            [app.keybinding :refer [use-hotkey]]))
+            [app.keybinding :refer [use-hotkey]]
+            [app.keymap :as keymap]))
 
 ;; The woken Cursor's look: the resting hover face plus a ring. One swappable
 ;; token — recolour the ring here and every Surface that lands the Cursor follows.
@@ -61,14 +62,14 @@
         [cursor set-cursor!] (use-state nil)
         was-active? (use-ref active?)
         seen-reset  (use-ref reset-nonce)]
-    (use-hotkey "j" #(when active? (set-cursor! (fn [c] (next-cursor c 1 n)))))
-    (use-hotkey "k" #(when active? (set-cursor! (fn [c] (next-cursor c -1 n)))))
-    (use-hotkey "e" #(when active?
-                       (when-let [row (get rows cursor)]
-                         (toggle row))))
-    (use-hotkey "h" #(when (and active? on-exit-left) (on-exit-left)))
-    (use-hotkey "l" #(when (and active? on-exit-right) (on-exit-right)))
-    (use-hotkey "Escape" #(when (and active? on-dismiss) (on-dismiss)))
+    (use-hotkey (keymap/key-of :move-down) #(when active? (set-cursor! (fn [c] (next-cursor c 1 n)))))
+    (use-hotkey (keymap/key-of :move-up) #(when active? (set-cursor! (fn [c] (next-cursor c -1 n)))))
+    (use-hotkey (keymap/key-of :toggle-task) #(when active?
+                                                (when-let [row (get rows cursor)]
+                                                  (toggle row))))
+    (use-hotkey (keymap/key-of :cross-left) #(when (and active? on-exit-left) (on-exit-left)))
+    (use-hotkey (keymap/key-of :cross-right) #(when (and active? on-exit-right) (on-exit-right)))
+    (use-hotkey (keymap/key-of :dismiss) #(when (and active? on-dismiss) (on-dismiss)))
     (use-effect
      ;; One effect owns where the Cursor lands when the world shifts under it:
      ;; - A reset (Esc or a mouse click bumped the shell's nonce) pulls this

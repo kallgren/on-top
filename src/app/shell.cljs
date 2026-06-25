@@ -4,7 +4,9 @@
             [app.config :as config]
             [app.core.view :as core]
             [app.day.view :as day]
+            [app.help :as help]
             [app.keybinding :as keybinding]
+            [app.keymap :as keymap]
             [app.rare.view :as rare]
             [app.shared.today :refer [use-today]]
             [app.storage :as storage]
@@ -103,7 +105,7 @@
                    (set-reset-nonce! inc))
                  [])]
     (keybinding/use-hotkey
-     "r"
+     (keymap/key-of :toggle-rare)
      (fn []
        (let [hiding? (not rare-hidden?)]
          (set-rare-hidden! hiding?)
@@ -166,6 +168,7 @@
        ($ app-header {:date today})
        ($ surfaces {:today today :wide? wide?})
        ($ timer)
+       ($ help/view)
        (when wide? ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
