@@ -2,6 +2,7 @@
   (:require [uix.core :refer [defui $ use-state]]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
+            [app.rare.cards :as cards]
             [app.rare.store :as store]
             [app.shared.schedule :as sched]
             [cljs.reader :as reader]
@@ -18,12 +19,6 @@
    [:household "Household"]])
 
 ;; ── Helpers ──────────────────────────────────────────────────────────────────
-
-(defn partition-tasks [tasks]
-  (let [sorted (sort-by :sort-key tasks)]
-    {:completed (filter :done? sorted)
-     :current   (remove #(or (:upcoming? %) (:done? %)) sorted)
-     :upcoming  (filter :upcoming? sorted)}))
 
 (defn date-display [iso-str]
   (let [now       (js/Date.)
@@ -171,33 +166,13 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-;; The visible-rows vector below is the order the keyboard Cursor walks: each
-;; card's `current` rows in display order, plus the rows of any fold the user has
-;; already expanded — Completed above, Upcoming below. Keyboard nav never
-;; auto-expands a fold, so a collapsed fold contributes nothing.
-
 (defui view [{:keys [today cursor]}]
   (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule)
-        ;; Fold expansion is lifted here so the visible-rows vector can include an
-        ;; expanded fold's rows — view state the per-card component used to own.
         [expanded set-expanded!] (use-state {})
-        cards (for [[cat label] categories
-                    :let [cat-rows (by-category cat)]
-                    :when (seq cat-rows)]
-                (let [{:keys [completed current upcoming]} (partition-tasks cat-rows)
-                      exp (get expanded cat)]
-                  {:cat cat :label label
-                   :completed completed :current current :upcoming upcoming
-                   :show-completed? (:completed? exp)
-                   :show-upcoming?  (:upcoming? exp)}))
-        rows (vec (mapcat (fn [{:keys [completed current upcoming show-completed? show-upcoming?]}]
-                            (concat (when show-completed? completed)
-                                    current
-                                    (when show-upcoming? upcoming)))
-                          cards))
-        focused (cursor/use-list-cursor rows toggle cursor)
-        cursor-key (:key focused)]
+        cards          (cards/build-cards by-category categories expanded)
+        focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
+        cursor-key     (:key focused)]
     ($ :div {:class "flex flex-col gap-4"}
        (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
          ($ category-card {:key       (str cat)
