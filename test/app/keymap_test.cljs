@@ -6,6 +6,7 @@
   (testing "the handlers pull their key literal from here, never hardcode it"
     (is (= "j" (keymap/key-of :move-down)))
     (is (= "r" (keymap/key-of :toggle-rare)))
+    (is (= "g" (keymap/key-of :toggle-timer)))
     (is (= "?" (keymap/key-of :help)))
     (is (= "Escape" (keymap/key-of :dismiss)))))
 
