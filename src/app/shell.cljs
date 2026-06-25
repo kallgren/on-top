@@ -1,5 +1,5 @@
 (ns app.shell
-  (:require [uix.core :refer [defui $ use-state use-ref use-effect use-layout-effect use-callback]]
+  (:require [uix.core :refer [defui defhook $ use-state use-ref use-effect use-layout-effect use-callback]]
             [uix.dom]
             [app.config :as config]
             [app.core.view :as core]
@@ -54,33 +54,27 @@
                    :class (str "h-2.5 w-2.5 rounded-full transition-colors "
                                (if (= i active) "bg-muted" "bg-edge"))}))))
 
-;; ── Surfaces ─────────────────────────────────────────────────────────────────
+;; ── Pane scroll ──────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide?]}]
+(defhook use-pane-scroll
+  "Owns the horizontal swipe between Panes, landing on `landing`. Returns
+   `{:ref :active :scroll-to}`: `:ref` for the scroller, `:active`/`:scroll-to`
+   for the Pane dots."
+  [landing]
   (let [scroll-ref (use-ref)
-        [active set-active!] (use-state landing-pane)
-        [rare-hidden? set-rare-hidden!] (use-state false)
-        ;; Which Pane holds the one keyboard Cursor. Core by default, so the cold
-        ;; start wakes there; only the active Surface binds the within-Pane keys,
-        ;; so a single Cursor is guaranteed.
-        [cursor-pane set-cursor-pane!] (use-state :core)
-        ;; A counter both Surfaces watch: bumping it pulls them back to dormant.
-        [reset-nonce set-reset-nonce!] (use-state 0)
-        ;; Esc, a mouse click, or hiding Rare out from under the Cursor resets it
-        ;; to the cold-start spot — pane back to Core and both Surfaces asleep —
-        ;; whichever Pane held it. Stable so the Surfaces' pointerdown listener
-        ;; isn't re-bound every render.
-        dismiss (use-callback
-                 (fn []
-                   (set-cursor-pane! :core)
-                   (set-reset-nonce! inc))
-                 [])]
+        [active set-active!] (use-state landing)
+        scroll-to (use-callback
+                   (fn [i]
+                     (let [el @scroll-ref]
+                       (.scrollTo el #js {:left (* i (.-clientWidth el))
+                                          :behavior "smooth"})))
+                   [])]
     (use-layout-effect
      (fn []
        (let [el @scroll-ref]
-         (set! (.-scrollLeft el) (* landing-pane (.-clientWidth el))))
+         (set! (.-scrollLeft el) (* landing (.-clientWidth el))))
        js/undefined)
-     [])
+     [landing])
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -91,48 +85,61 @@
          (.addEventListener el "scroll" on-scroll #js {:passive true})
          #(.removeEventListener el "scroll" on-scroll)))
      [])
+    {:ref scroll-ref :active active :scroll-to scroll-to}))
+
+;; ── Pane cursor ──────────────────────────────────────────────────────────────
+
+(defhook use-pane-cursor
+  "Owns crossing the one keyboard Cursor between Panes and the `r` toggle (see
+   ADR-0011). Returns `{:rare-hidden? :core :rare}`, where `:core`/`:rare` are
+   opaque `use-list-cursor` opts bundles each Surface forwards untouched."
+  []
+  (let [[rare-hidden? set-rare-hidden!] (use-state false)
+        [cursor-pane set-cursor-pane!] (use-state :core)
+        [reset-nonce set-reset-nonce!] (use-state 0)
+        dismiss (use-callback
+                 (fn []
+                   (set-cursor-pane! :core)
+                   (set-reset-nonce! inc))
+                 [])]
     (keybinding/use-hotkey
      "r"
-     ;; Hiding Rare out from under the Cursor would strand a ring on a Pane
-     ;; that's gone, so it falls back to the cold-start spot — dormant, pane
-     ;; back to Core — and the next navigation key wakes it on Core. Rare
-     ;; forgets its row, so reopening with `l` lands on the first row.
      (fn []
        (let [hiding? (not rare-hidden?)]
          (set-rare-hidden! hiding?)
          (when (and hiding? (= cursor-pane :rare))
            (dismiss)))))
+    {:rare-hidden? rare-hidden?
+     :core {:active? (= cursor-pane :core)
+            :on-dismiss dismiss
+            :reset-nonce reset-nonce
+            :on-exit-right (fn []
+                             (set-rare-hidden! false)
+                             (set-cursor-pane! :rare))}
+     :rare {:active? (= cursor-pane :rare)
+            :on-dismiss dismiss
+            :reset-nonce reset-nonce
+            :on-exit-left #(set-cursor-pane! :core)}}))
+
+;; ── Surfaces ─────────────────────────────────────────────────────────────────
+
+(defui surfaces [{:keys [today wide?]}]
+  (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
+        {:keys [rare-hidden? core rare]} (use-pane-cursor)]
     ($ :<>
-       ($ :div {:ref scroll-ref
+       ($ :div {:ref ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
           ($ :section {:class "w-full shrink-0 snap-center wide:hidden"}
              (when-not wide? ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
-                ($ core/view {:today today
-                              :active? (= cursor-pane :core)
-                              :on-dismiss dismiss
-                              :reset-nonce reset-nonce
-                              ;; Core is leftmost: `h` stays put. `l` reveals Rare
-                              ;; if hidden and crosses the Cursor into it.
-                              :on-exit-right (fn []
-                                               (set-rare-hidden! false)
-                                               (set-cursor-pane! :rare))})))
+                ($ core/view {:today today :cursor core})))
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today
-                              :active? (= cursor-pane :rare)
-                              :on-dismiss dismiss
-                              :reset-nonce reset-nonce
-                              ;; Rare is rightmost: `l` stays put. `h` crosses back.
-                              :on-exit-left #(set-cursor-pane! :core)}))))
-       ($ pane-dots {:active active
-                     :on-select (fn [i]
-                                  (let [el @scroll-ref]
-                                    (.scrollTo el #js {:left (* i (.-clientWidth el))
-                                                       :behavior "smooth"})))}))))
+                ($ rare/view {:today today :cursor rare}))))
+       ($ pane-dots {:active active :on-select scroll-to}))))
 
 ;; ── Desktop drawer ───────────────────────────────────────────────────────────
 

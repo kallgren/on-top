@@ -176,7 +176,7 @@
 ;; already expanded — Completed above, Upcoming below. Keyboard nav never
 ;; auto-expands a fold, so a collapsed fold contributes nothing.
 
-(defui view [{:keys [today active? on-exit-left on-dismiss reset-nonce]}]
+(defui view [{:keys [today cursor]}]
   (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule)
         ;; Fold expansion is lifted here so the visible-rows vector can include an
@@ -196,9 +196,7 @@
                                     current
                                     (when show-upcoming? upcoming)))
                           cards))
-        focused (cursor/use-list-cursor rows toggle
-                                        {:active? active? :on-exit-left on-exit-left
-                                         :on-dismiss on-dismiss :reset-nonce reset-nonce})
+        focused (cursor/use-list-cursor rows toggle cursor)
         cursor-key (:key focused)]
     ($ :div {:class "flex flex-col gap-4"}
        (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
