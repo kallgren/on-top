@@ -20,3 +20,14 @@
       (is (keyword? (:id b)))
       (is (seq (:key b)))
       (is (seq (:desc b))))))
+
+(deftest every-binding-sits-in-a-known-group
+  (let [group-ids (set (map :id keymap/groups))]
+    (doseq [b keymap/bindings]
+      (is (contains? group-ids (:group b))))))
+
+(deftest no-group-renders-empty
+  (testing "every section the overlay draws has at least one binding"
+    (let [used (set (map :group keymap/bindings))]
+      (doseq [g keymap/groups]
+        (is (contains? used (:id g)))))))
