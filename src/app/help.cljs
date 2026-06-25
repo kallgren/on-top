@@ -67,9 +67,8 @@
                    :aria-label "Keyboard shortcuts"
                    :class (str "fixed right-7 top-7 z-20 hidden h-9 w-9 wide:flex "
                                "items-center justify-center rounded-full "
-                               "border-2 border-edge bg-surface text-[16px] font-bold "
-                               "text-muted cursor-pointer transition "
-                               "hover:bg-surface-hover active:scale-95")}
+                               "border border-edge/60 text-[16px] font-bold leading-none "
+                               "text-muted cursor-pointer transition hover:bg-edge/30")}
           "?")
        (when open?
          ($ overlay {:on-close #(set-open! false)})))))
