@@ -1,8 +1,9 @@
 (ns app.shell
-  (:require [uix.core :refer [defui $ use-state use-ref use-effect]]
+  (:require [uix.core :refer [defui $ use-state use-ref use-effect use-layout-effect]]
             [uix.dom]
             [app.config :as config]
             [app.core.view :as core]
+            [app.day.view :as day]
             [app.keybinding :as keybinding]
             [app.rare.view :as rare]
             [app.shared.today :refer [use-today]]
@@ -23,9 +24,26 @@
        ($ :div {:class "text-[19px] font-medium tracking-wide text-muted"}
           (str wd " · " md)))))
 
+;; ── Viewport ─────────────────────────────────────────────────────────────────
+
+(def wide-query "(min-width: 1200px)")
+
+(defn- use-wide? []
+  (let [[wide? set-wide!] (use-state #(.-matches (js/matchMedia wide-query)))]
+    (use-effect
+     (fn []
+       (let [mq (js/matchMedia wide-query)
+             on-change #(set-wide! (.-matches mq))]
+         (.addEventListener mq "change" on-change)
+         #(.removeEventListener mq "change" on-change)))
+     [])
+    wide?))
+
 ;; ── Pane indicator ───────────────────────────────────────────────────────────
 
-(def pane-count 2)
+(def pane-count 3)
+
+(def landing-pane 1)
 
 (defui pane-dots [{:keys [active on-select]}]
   ($ :div {:class "fixed inset-x-0 bottom-0 z-20 flex justify-center gap-2.5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] wide:hidden"}
@@ -38,10 +56,16 @@
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today]}]
+(defui surfaces [{:keys [today wide?]}]
   (let [scroll-ref (use-ref)
-        [active set-active!] (use-state 0)
+        [active set-active!] (use-state landing-pane)
         [rare-hidden? set-rare-hidden!] (use-state false)]
+    (use-layout-effect
+     (fn []
+       (let [el @scroll-ref]
+         (set! (.-scrollLeft el) (* landing-pane (.-clientWidth el))))
+       js/undefined)
+     [])
     (use-effect
      (fn []
        (let [el @scroll-ref
@@ -57,6 +81,8 @@
        ($ :div {:ref scroll-ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
+          ($ :section {:class "w-full shrink-0 snap-center wide:hidden"}
+             (when-not wide? ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today})))
@@ -70,14 +96,32 @@
                                     (.scrollTo el #js {:left (* i (.-clientWidth el))
                                                        :behavior "smooth"})))}))))
 
+;; ── Desktop drawer ───────────────────────────────────────────────────────────
+
+(defui day-drawer [{:keys [today]}]
+  (let [[open? set-open!] (use-state false)]
+    ($ :div {:class "fixed inset-y-0 left-0 z-30"}
+       ($ :div {:class "absolute inset-y-0 left-0 w-4"
+                :on-mouse-enter #(set-open! true)})
+       ($ :div {:class (str "absolute inset-y-0 left-0 w-[360px] bg-page "
+                            (if open?
+                              "translate-x-0 shadow-[6px_0_30px_-4px_rgba(0,0,0,0.25)] "
+                              "-translate-x-full pointer-events-none"))
+                :on-mouse-leave #(set-open! false)}
+          ($ :div {:class "px-6 pt-12 pb-6 text-center text-[15px] font-bold uppercase tracking-[0.24em] text-muted"}
+             "Daily schedule")
+          ($ day/view {:today today})))))
+
 ;; ── App ──────────────────────────────────────────────────────────────────────
 
 (defui app []
-  (let [today (use-today)]
+  (let [today (use-today)
+        wide? (use-wide?)]
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today})
-       ($ timer))))
+       ($ surfaces {:today today :wide? wide?})
+       ($ timer)
+       (when wide? ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 

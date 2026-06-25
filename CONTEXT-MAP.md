@@ -1,24 +1,26 @@
 # On Top
 
-A calm personal routine system with two surfaces over one shared language:
-a daily check-off of the chores due today, and a slower surface for upkeep you
-get to when you can. Tapping marks things done; nothing nags.
+A calm personal routine system with three surfaces over one shared language:
+a daily check-off of the chores due today, a slower surface for upkeep you get
+to when you can, and a timetable of the day's time blocks you move through. Tapping
+marks things done; nothing nags.
 
-This map fixes the language shared by both surfaces and points to where each
+This map fixes the language shared by all three surfaces and points to where each
 surface's own language lives. It is a glossary, not a spec — no implementation
 details.
 
 ## Surfaces
 
 **Surface**:
-One of the two self-contained halves the product presents — **Core** or **Rare**.
-Each was once a standalone app; now each is a bounded context with its own
-**Schedule**, view, and completion store, sharing the kernel language below. The
-two are distinguished by **posture** — the relationship you have to the work —
-not by how often a task recurs. ("Core" and "Rare" are working names; the
-distinction is posture, not frequency.) A Surface is a *concept* — a bounded
-context, the unit a completion is tagged with — not the region of screen it
-occupies: it is *rendered in* a **Pane**. Reserve "surface" for "Core or Rare".
+One of the three self-contained parts the product presents — **Core**, **Rare**,
+or **Day**. Each is a bounded context with its own **Schedule**, view, and
+completion store, sharing the kernel language below. (Core and Rare each began as
+a standalone app; Day was born inside the product.) The three are distinguished
+by **posture** — the relationship you have to the work — not by how often a task
+recurs. ("Core", "Rare" and "Day" are working names; the distinction is posture,
+not frequency.) A Surface is a *concept* — a bounded context, the unit a
+completion is tagged with — not the region of screen it occupies: it is
+*rendered in* a **Pane**. Reserve "surface" for "Core, Rare or Day".
 _Avoid_: app, view, tab, mode, screen; "surface" for the on-screen region (that's a Pane)
 
 **Core** — _posture: today._
@@ -32,6 +34,13 @@ Slower upkeep done when **time and energy allow**, plus a few with real
 deadlines. Unobtrusive by design — it shouldn't speak up unless a date is
 closing in.
 Language: [src/app/rare/CONTEXT.md](src/app/rare/CONTEXT.md).
+
+**Day** — _posture: where you are in it._
+The shape of the whole day as a vertical timetable of **Time block**s — Deep
+Work, Exercise, a time block for the day's Core tasks — that you move through as
+the clock advances. Not a list you clear but a frame you track your position against; a
+now-line marks the present moment. The same data every day.
+Language: [src/app/day/CONTEXT.md](src/app/day/CONTEXT.md).
 
 **Pane**:
 The on-screen region that renders one **Surface** in the shell's current layout.
@@ -51,13 +60,15 @@ A recurring chore with a stable **id**, a **Category**, and a display **name** �
 the name can be reworded without changing the task's identity or losing its
 **Done-through** history. A task is a template, not an **Occurrence**: it carries
 a **recurrence rule** that places it in time and generates many dated occurrences.
-Within a surface a task belongs to exactly one Category. The recurrence rule's
+Within a surface a task belongs to exactly one Category — except on **Day**,
+which has no categories and orders tasks by time of day. The recurrence rule's
 *shape* is surface-specific.
 _Avoid_: item, todo, chore (in code), reminder
 
 **Category**:
-The kind of a task. Exactly two exist: `:digital` and `:household`. Fixed, not
-user-configurable. The same two categories on both surfaces.
+The kind of a task on **Core** and **Rare**. Exactly two exist: `:digital` and
+`:household`. Fixed, not user-configurable. The same two on both those surfaces;
+**Day** has no categories — it orders by time of day instead.
 _Avoid_: section, group, type
 
 **Schedule**:

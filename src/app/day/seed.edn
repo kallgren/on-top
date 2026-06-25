@@ -1,0 +1,19 @@
+;; On Top — the Day timetable seed.
+;;
+;; A flat, ordered vector of Time blocks for one day, each
+;; {:id :name :start :end} with 24h local "HH:MM" times. Blocks are contiguous —
+;; each :end is the next :start — so the day reads top-to-bottom with no holes.
+;; The Open block carries :open? true: unstructured "Free" time that fills what
+;; would be a gap and is never completed. :id is the stable identity; :name is
+;; the display label and can be reworded freely. A plausible, legible day shape
+;; as a floor before any gist override.
+[{:id "morning-routine" :name "Morning routine"  :start "05:30" :end "07:00"}
+ {:id "deep-work"       :name "Deep work"        :start "07:00" :end "09:30"}
+ {:id "breakfast"       :name "Breakfast"        :start "09:30" :end "10:00"}
+ {:id "exercise"        :name "Exercise"         :start "10:00" :end "10:45"}
+ {:id "core-tasks"      :name "Core tasks"       :start "10:45" :end "11:15"}
+ {:id "email-messages"  :name "Email and messages" :start "11:15" :end "12:00"}
+ {:id "free"            :name "Free"             :start "12:00" :end "17:30" :open? true}
+ {:id "dinner"          :name "Dinner"           :start "17:30" :end "18:30"}
+ {:id "reading"         :name "Reading"          :start "18:30" :end "20:00"}
+ {:id "wind-down"       :name "Wind down"        :start "20:00" :end "21:00"}]

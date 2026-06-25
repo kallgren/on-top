@@ -6,7 +6,7 @@
 (defn parse-schedule [s]
   (try
     (let [parsed (reader/read-string s)]
-      (when (map? parsed) parsed))
+      (when (or (map? parsed) (vector? parsed)) parsed))
     (catch :default _ nil)))
 
 (defn resolve-schedule [cached seed]
