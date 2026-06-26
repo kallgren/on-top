@@ -114,10 +114,23 @@
   [notes id]
   (get-in notes [id :name] id))
 
+(defn note-for
+  "The Note for a task id: the Notes lookup's note, or nil when the id has no
+   definition or no note."
+  [notes id]
+  (get-in notes [id :note]))
+
 (defn enrich
-  "Join display names from the Notes lookup onto id-only tasks (or rows) by id."
+  "Join display names — and any Note — from the Notes lookup onto id-only tasks
+   (or rows) by id. `:name` always lands (id-fallback); `:note` lands only when
+   the id has one, staying absent otherwise."
   [notes tasks]
-  (map #(assoc % :name (name-for notes (:id %))) tasks))
+  (map (fn [task]
+         (let [id   (:id task)
+               note (note-for notes id)]
+           (cond-> (assoc task :name (name-for notes id))
+             note (assoc :note note))))
+       tasks))
 
 ;; ── Fetch ─────────────────────────────────────────────────────────────────────
 

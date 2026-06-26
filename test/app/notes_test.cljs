@@ -115,6 +115,14 @@
   (is (= "gmail" (notes/name-for {} "gmail")))
   (is (= "gmail" (notes/name-for {"other" {:name "Other"}} "gmail"))))
 
+(deftest note-for-looks-up-a-known-note
+  (is (= "Under the bed too"
+         (notes/note-for {"vacuum" {:name "Vacuum" :note "Under the bed too"}} "vacuum"))))
+
+(deftest note-for-is-nil-for-an-unknown-id-or-a-note-less-definition
+  (is (nil? (notes/note-for {} "gmail")))
+  (is (nil? (notes/note-for {"gmail" {:name "Gmail inbox"}} "gmail"))))
+
 (deftest enrich-joins-names-onto-id-only-tasks
   (is (= [{:category :digital :id "gmail" :name "Gmail inbox"}
           {:category :digital :id "unknown" :name "unknown"}]
@@ -128,7 +136,21 @@
         [core-task]  (notes/enrich notes-lookup [{:category :digital :id "vacuum"}])
         [rare-row]   (notes/enrich notes-lookup [{:category :household :id "vacuum" :freq "monthly"}])]
     (is (= "Vacuum" (:name core-task) (:name rare-row)))
-    (is (= "Under the bed too" (get-in notes-lookup ["vacuum" :note])))))
+    (is (= "Under the bed too" (:note core-task) (:note rare-row)))))
+
+(deftest enrich-carries-the-note-when-the-id-has-one
+  (is (= [{:category :household :id "vacuum" :name "Vacuum" :note "Under the bed too"}]
+         (notes/enrich {"vacuum" {:name "Vacuum" :note "Under the bed too"}}
+                       [{:category :household :id "vacuum"}]))))
+
+(deftest enrich-leaves-the-note-absent-when-the-id-has-none
+  (let [[note-less unknown]
+        (notes/enrich {"gmail" {:name "Gmail inbox"}}
+                      [{:category :digital :id "gmail"}
+                       {:category :digital :id "unknown"}])]
+    (is (= {:category :digital :id "gmail" :name "Gmail inbox"} note-less))
+    (is (not (contains? note-less :note)))
+    (is (not (contains? unknown :note)))))
 
 ;; ── Resolution (mirrors schedule-source) ─────────────────────────────────────
 
