@@ -3,7 +3,6 @@
             [app.core.store :as store]
             [app.cursor :as cursor]
             [app.date-utils :as dates]
-            [app.shared.schedule :as sched]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -16,6 +15,8 @@
 (def categories
   [[:digital   "Digital"]
    [:household "Household"]])
+
+(def category-keys (map first categories))
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
@@ -88,8 +89,7 @@
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui day-view [{:keys [today schedule notes cursor]}]
-  (let [category-keys (map first categories)
-        [tasks toggle] (store/use-store today schedule notes category-keys)
+  (let [[tasks toggle] (store/use-store today schedule notes category-keys)
         focused (cursor/use-list-cursor tasks #(toggle (:id %)) cursor)
         cursor-id (:id focused)
         content-ref (use-ref)
@@ -102,7 +102,6 @@
             ($ task-list {:by-category by-category :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))
 
-(defui view [{:keys [today cursor notes]}]
-  (let [schedule (sched/use-schedule :core-schedule-url schedule-cache-key seed-schedule)]
-    ($ day-view {:key (dates/iso-date today) :today today :schedule schedule
-                 :notes notes :cursor cursor})))
+(defui view [{:keys [today cursor notes schedule]}]
+  ($ day-view {:key (dates/iso-date today) :today today :schedule schedule
+               :notes notes :cursor cursor}))

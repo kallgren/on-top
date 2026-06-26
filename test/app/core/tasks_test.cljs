@@ -20,6 +20,23 @@
     (is (= [{:category :digital :id "calendar"}]
            (tasks/tasks-for schedule monday [:digital])))))
 
+(deftest todays-notes-returns-note-bearing-tasks-in-core-list-order
+  (let [schedule {:digital   {:week-odd {:thursday ["gmail" "downloads"]}}
+                  :household {:week-odd {:thursday ["dishes" "dust"]}}}
+        notes    {"gmail" {:name "Gmail inbox" :note "Snooze the rest"}
+                  "dishes" {:name "Dishes"}
+                  "dust"  {:name "Dust" :note "Top of the shelves too"}}
+        thursday (js/Date. 2026 5 18)]            ; 2026-06-18: week-odd, Thursday
+    (is (= [{:name "Gmail inbox" :note "Snooze the rest"}
+            {:name "Dust" :note "Top of the shelves too"}]
+           (tasks/todays-notes schedule thursday [:digital :household] notes)))))
+
+(deftest todays-notes-is-empty-when-no-scheduled-task-has-a-note
+  (let [schedule {:digital {:week-odd {:thursday ["gmail" "downloads"]}}}
+        notes    {"gmail" {:name "Gmail inbox"}}
+        thursday (js/Date. 2026 5 18)]            ; 2026-06-18: week-odd, Thursday
+    (is (empty? (tasks/todays-notes schedule thursday [:digital] notes)))))
+
 (deftest previous-occurrence-finds-the-most-recent-prior-scheduled-day
   (let [schedule {:digital {:week-odd {:monday   ["gmail"]
                                        :thursday ["gmail"]}}}
