@@ -65,14 +65,21 @@ These terms mean the same thing on both surfaces. Each surface adds its own
 terms on top (see the surface contexts above).
 
 **Task**:
-A recurring chore with a stable **id**, a **Category**, and a display **name** —
-the name can be reworded without changing the task's identity or losing its
-**Done-through** history. A task is a template, not an **Occurrence**: it carries
-a **recurrence rule** that places it in time and generates many dated occurrences.
-Within a surface a task belongs to exactly one Category — except on **Day**,
-which has no categories and orders tasks by time of day. The recurrence rule's
-*shape* is surface-specific.
+A recurring chore with a stable **task id**, a **Category**, and a **recurrence
+rule**. On **Core** and **Rare**, its display **name** and optional **Note** come
+from the **Notes file**, keyed by its **task id** (on **Day** the name is carried
+inline in the schedule); the name can be reworded without changing identity or
+losing **Done-through** history. A task is a template, not an
+**Occurrence**: its recurrence rule places it in time and generates many dated
+occurrences. Within a surface a task belongs to exactly one Category — except on
+**Day**, which has no categories and orders tasks by time of day. The recurrence
+rule's *shape* is surface-specific.
 _Avoid_: item, todo, chore (in code), reminder
+
+**Task id**:
+A task's stable identity: lowercase letters, digits and dashes (`[a-z0-9-]+`),
+globally unique across all surfaces. Distinct from the **name**, which may change.
+_Avoid_: key, slug; name
 
 **Category**:
 The kind of a task on **Core** and **Rare**. Exactly two exist: `:digital` and
@@ -81,11 +88,23 @@ The kind of a task on **Core** and **Rare**. Exactly two exist: `:digital` and
 _Avoid_: section, group, type
 
 **Schedule**:
-The full set of **Task** definitions and their recurrence rules for one surface —
-the source from which **Occurrence**s are computed. A domain concept ("add Gmail
-to the schedule"), independent of how or where it's stored. Each surface has its
-own Schedule, stored its own way.
-_Avoid_: calendar, plan, config
+Which **task id**s recur when, in a surface's own recurrence shape — the source
+from which **Occurrence**s are computed. On **Core** and **Rare** it carries ids
+and recurrence only, never names (those live in the **Notes file**); **Day**
+keeps its names inline.
+_Avoid_: calendar, plan, config; holding display names (Core/Rare)
+
+**Notes file**:
+The single Markdown document that gives **Core** and **Rare** tasks their display
+**name** and optional **Note**, keyed by **task id** and shared across those two
+surfaces. **Day** is out of scope — its schedule keeps names inline and never
+consults the notes file.
+_Avoid_: descriptions file, glossary, schedule
+
+**Note**:
+The optional multi-line prose attached to a task in its **Task definition**;
+authored and rendered as Markdown.
+_Avoid_: description, comment, blurb
 
 **Occurrence**:
 A specific dated instance of a **Task**, computed by applying the task's
