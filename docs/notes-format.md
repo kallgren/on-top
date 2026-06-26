@@ -6,8 +6,10 @@ surfaces. A name lives in exactly this one place, so reword it here without
 touching identity or Done-through; the binding is the id. Day is out of scope: its
 schedule keeps names inline and never consults this file.
 
-This is the one bespoke format in the product. For what the terms mean (Task, Task
-id, Notes file, Note), see [CONTEXT-MAP.md](../CONTEXT-MAP.md).
+This is the one bespoke format in the product, and the canonical spec for how the
+notes file is parsed — the parser implements it, so keep the two in sync. For what
+the terms mean (Task, Task id, Notes file, Note), see
+[CONTEXT-MAP.md](../CONTEXT-MAP.md).
 
 ## Grammar
 
