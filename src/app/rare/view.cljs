@@ -86,17 +86,20 @@
         {:type "button"
          :aria-label "Show note"
          :on-click on-toggle-pin
-         :class "shrink-0 flex h-4 w-4 items-center justify-center text-muted hover:text-heading cursor-pointer"}
-        ($ :svg {:viewBox "0 0 20 20" :class "h-4 w-4" :fill "currentColor" :aria-hidden true}
-           ($ :path {:fill-rule "evenodd"
-                     :clip-rule "evenodd"
-                     :d (str "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 "
-                             "000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 "
-                             "000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z")})))
-     ($ :div {:class (str "absolute right-0 top-full z-20 pt-2 "
+         :class (str "shrink-0 flex h-5 w-5 items-center justify-center cursor-pointer "
+                     "text-heading/35 transition-colors group-hover:text-heading/60 hover:text-heading")}
+        ($ :svg {:viewBox "0 0 24 24" :class "h-5 w-5" :fill "none" :stroke "currentColor"
+                 :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round" :aria-hidden true}
+           ($ :circle {:cx 12 :cy 12 :r 9})
+           ($ :line {:x1 12 :y1 11 :x2 12 :y2 16})
+           ($ :line {:x1 12 :y1 7.5 :x2 12 :y2 7.5})))
+     ($ :div {:class (str "absolute right-0 top-full z-30 pt-2.5 "
                           (if pinned? "block" "hidden group-hover/note:block"))}
-        ($ :div {:class (str "w-64 max-w-[70vw] rounded-lg border-2 border-edge bg-surface p-3 shadow-lg "
-                             "whitespace-pre-wrap text-[13px] leading-snug text-label")}
+        ($ :div {:class (str "relative w-72 max-w-[70vw] rounded-xl border-2 border-edge bg-surface p-4 shadow-xl "
+                             "whitespace-pre-line text-[13.5px] leading-relaxed text-label")}
+           ($ :div {:aria-hidden true
+                    :class (str "absolute right-4 -top-[7px] h-3 w-3 rotate-45 "
+                                "border-l-2 border-t-2 border-edge bg-surface")})
            note
            ($ :button
               {:type "button"

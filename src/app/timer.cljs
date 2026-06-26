@@ -26,13 +26,12 @@
 ;; ── Sheet ────────────────────────────────────────────────────────────────────
 
 (defui note-block [{:keys [name note]}]
-  ($ :div {:class "mb-5 break-inside-avoid last:mb-0"}
-     ($ :h3 {:class "mb-1 text-[15px] font-bold text-label first-letter:uppercase"} name)
-     ($ :p {:class "whitespace-pre-wrap text-[14px] leading-snug text-muted"} note)))
+  ($ :div {:class "border-b border-edge/60 py-3 last:border-b-0"}
+     ($ :h3 {:class "text-[20px] font-bold text-label first-letter:uppercase"} name)
+     ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note)))
 
 (defui note-sheet [{:keys [items]}]
-  ($ :div {:class (str "max-h-[40vh] overflow-y-auto border-b-2 border-edge bg-surface "
-                       "px-7 py-5 wide:columns-2 wide:gap-8")}
+  ($ :div {:class "max-h-[40vh] overflow-y-auto border-b border-edge bg-surface px-7 pt-4 pb-5"}
      (for [{:keys [name note]} items]
        ($ note-block {:key name :name name :note note}))))
 
@@ -66,12 +65,13 @@
      [end-at left])
     (if running?
       ($ :div {:role "timer"
-               :class "fixed inset-x-0 bottom-0 z-20 flex flex-col"}
+               :class (str "fixed inset-x-0 bottom-0 z-20 flex flex-col border-t-2 "
+                           (if done? "border-done" "border-edge"))}
          (when (seq items)
            ($ note-sheet {:items items}))
          ($ :div {:class (str "flex items-center justify-between gap-4 "
-                              "border-t-2 px-7 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] "
-                              (if done? "bg-done border-done" "bg-surface border-edge"))}
+                              "px-7 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] "
+                              (if done? "bg-done" "bg-surface"))}
             ($ :span {:class (if done?
                                "text-[19px] font-bold uppercase tracking-[0.2em] text-white"
                                "text-[34px] font-bold tabular-nums tracking-wide text-label")}
