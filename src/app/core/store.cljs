@@ -21,9 +21,9 @@
       (tasks/previous-occurrence schedule date id category-keys)
       today)))
 
-(defn select [{:keys [completions]} schedule today category-keys]
+(defn select [{:keys [completions]} schedule notes today category-keys]
   (let [today-key (iso-date today)]
-    (for [{:keys [id] :as task} (tasks/tasks-for schedule today category-keys)]
+    (for [{:keys [id] :as task} (tasks/enrich notes (tasks/tasks-for schedule today category-keys))]
       (assoc task :done? (boolean (covered? completions id today-key))))))
 
 ;; ── Wiring ───────────────────────────────────────────────────────────────────
@@ -39,12 +39,12 @@
   (storage/write-completions! completions-key completions)
   (storage/write-outbox! outbox-key outbox))
 
-(defhook use-store [today schedule category-keys]
+(defhook use-store [today schedule notes category-keys]
   (let [[store] (use-state #(store/create (read-initial)))
         snapshot (store/use-subscribe store)]
     (store/use-sync! store snapshot
                      {:persist! persist! :creds store/creds :surface "core"} today)
-    [(select snapshot schedule today category-keys)
+    [(select snapshot schedule notes today category-keys)
      (fn [id]
        (swap! store store/toggled id
               (next-done-through (:completions @store) schedule category-keys today id)))]))

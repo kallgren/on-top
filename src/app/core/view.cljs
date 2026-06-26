@@ -87,9 +87,9 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui day-view [{:keys [today schedule cursor]}]
+(defui day-view [{:keys [today schedule notes cursor]}]
   (let [category-keys (map first categories)
-        [tasks toggle] (store/use-store today schedule category-keys)
+        [tasks toggle] (store/use-store today schedule notes category-keys)
         focused (cursor/use-list-cursor tasks #(toggle (:id %)) cursor)
         cursor-id (:id focused)
         content-ref (use-ref)
@@ -102,7 +102,7 @@
             ($ task-list {:by-category by-category :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))
 
-(defui view [{:keys [today cursor]}]
+(defui view [{:keys [today cursor notes]}]
   (let [schedule (sched/use-schedule :core-schedule-url schedule-cache-key seed-schedule)]
     ($ day-view {:key (dates/iso-date today) :today today :schedule schedule
-                 :cursor cursor})))
+                 :notes notes :cursor cursor})))

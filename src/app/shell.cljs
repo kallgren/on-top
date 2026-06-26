@@ -7,10 +7,17 @@
             [app.help :as help]
             [app.keybinding :as keybinding]
             [app.keymap :as keymap]
+            [app.notes :as notes]
             [app.rare.view :as rare]
+            [app.shared.notes :as shared-notes]
             [app.shared.today :refer [use-today]]
             [app.storage :as storage]
-            [app.timer :refer [timer]]))
+            [app.timer :refer [timer]]
+            [shadow.resource :as rc]))
+
+;; ── Notes floor ──────────────────────────────────────────────────────────────
+
+(def seed-notes (notes/parse (rc/inline "app/seed-notes.md")))
 
 ;; ── Header ───────────────────────────────────────────────────────────────────
 
@@ -127,7 +134,8 @@
 
 (defui surfaces [{:keys [today wide?]}]
   (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
-        {:keys [rare-hidden? core rare]} (use-pane-cursor)]
+        {:keys [rare-hidden? core rare]} (use-pane-cursor)
+        notes (shared-notes/use-notes seed-notes)]
     ($ :<>
        ($ :div {:ref ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
@@ -136,7 +144,7 @@
              (when-not wide? ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
-                ($ core/view {:today today :cursor core})))
+                ($ core/view {:today today :cursor core :notes notes})))
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
