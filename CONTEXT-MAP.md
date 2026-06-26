@@ -98,7 +98,8 @@ _Avoid_: calendar, plan, config; holding display names (Core/Rare)
 The single Markdown document that gives **Core** and **Rare** tasks their display
 **name** and optional **Note**, keyed by **task id** and shared across those two
 surfaces. **Day** is out of scope — its schedule keeps names inline and never
-consults the notes file.
+consults the notes file. Its authoring and parse format is specced in
+[docs/notes-format.md](docs/notes-format.md).
 _Avoid_: descriptions file, glossary, schedule
 
 **Note**:
