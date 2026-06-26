@@ -7,7 +7,7 @@
     (is (= "j" (keymap/key-of :move-down)))
     (is (= "r" (keymap/key-of :toggle-rare)))
     (is (= "g" (keymap/key-of :toggle-timer)))
-    (is (= "i" (keymap/key-of :toggle-note)))
+    (is (= "Enter" (keymap/key-of :open-details)))
     (is (= "?" (keymap/key-of :help)))
     (is (= "Escape" (keymap/key-of :dismiss)))))
 

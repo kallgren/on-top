@@ -13,9 +13,8 @@
 (defhook use-timer
   "The app-level focus controller: holds whether a session is running and the
    ordered `{:name :note}` list it was started on. `start!` takes that payload so
-   any trigger (the Go button, the toggle-timer hotkey, a future single-Task
-   Start) drops into focus on its own list. The presentational `timer` renders
-   from this."
+   any trigger (the Go button, the toggle-timer hotkey) drops into focus on its
+   own list. The presentational `timer` renders from this."
   []
   (let [[session set-session!] (use-state nil)]
     {:running? (some? session)
