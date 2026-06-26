@@ -56,12 +56,38 @@
   ($ :span {:class "rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading"}
      freq))
 
-(defui task-row [{:keys [row on-toggle at-cursor?]}]
-  (let [{:keys [name freq display-iso due-label done? missed]} row
+;; The ⓘ + its hover popover. The whole wrapper swallows clicks so neither the ⓘ
+;; nor a click inside the popover ever bubbles into a Done-through toggle on the
+;; row. Visibility is the CSS hover of the wrapper OR the row's pin — the popover
+;; lives inside the hover wrapper (the bridge), so the pointer can travel from the
+;; ⓘ onto the text to select it without dismissing.
+(defui note-indicator [{:keys [note pinned? on-toggle-pin]}]
+  ($ :div {:class "group/note relative flex items-center"
+           :on-click #(.stopPropagation %)}
+     ($ :button
+        {:type "button"
+         :aria-label "Show note"
+         :on-click on-toggle-pin
+         :class "shrink-0 flex h-4 w-4 items-center justify-center text-muted hover:text-heading cursor-pointer"}
+        ($ :svg {:viewBox "0 0 20 20" :class "h-4 w-4" :fill "currentColor" :aria-hidden true}
+           ($ :path {:fill-rule "evenodd"
+                     :clip-rule "evenodd"
+                     :d (str "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 "
+                             "000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 "
+                             "000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z")})))
+     ($ :div {:class (str "absolute right-0 top-full z-20 pt-2 "
+                          (if pinned? "block" "hidden group-hover/note:block"))}
+        ($ :div {:class (str "w-64 max-w-[70vw] rounded-lg border-2 border-edge bg-surface p-3 shadow-lg "
+                             "whitespace-pre-wrap text-[13px] leading-snug text-label")}
+           note))))
+
+(defui task-row [{:keys [row on-toggle at-cursor? pinned? on-pin]}]
+  (let [{:keys [id name note freq display-iso due-label done? missed]} row
         due                due-label
         {:keys [rel full today-or-yesterday?]} (date-display display-iso)]
-    ($ :button
-       {:on-click #(on-toggle row)
+    ($ :div
+       {:role "button"
+        :on-click #(on-toggle row)
         ;; A focused row wears the hover face steadily plus the Cursor ring, so it
         ;; reads the same as a hovered row.
         :class (str "group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg "
@@ -86,17 +112,23 @@
          ($ :span {:class "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-red-500/12 text-red-500"}
             (str missed " missed")))
        ($ :div {:class "flex-1"})
+       (when note
+         ($ note-indicator {:note note
+                            :pinned? pinned?
+                            :on-toggle-pin #(on-pin (fn [cur] (when-not (= cur id) id)))}))
        (when (or done? (not today-or-yesterday?))
          ($ :span {:class "text-[13px] font-semibold tabular-nums text-muted"} full))
        ($ freq-badge {:freq freq}))))
 
-(defui task-list [{:keys [tasks on-toggle class cursor-key]}]
+(defui task-list [{:keys [tasks on-toggle class cursor-key open-note on-pin]}]
   ($ :div {:class (str "flex flex-col" (when class (str " " class)))}
      (for [t tasks]
        ($ task-row {:key        (:key t)
                     :row        t
                     :on-toggle  on-toggle
-                    :at-cursor? (= (:key t) cursor-key)}))))
+                    :at-cursor? (= (:key t) cursor-key)
+                    :pinned?    (= (:id t) open-note)
+                    :on-pin     on-pin}))))
 
 (defui reveal-divider [{:keys [label on-click]}]
   ($ :div {:class "group/rev mx-4 my-1 flex items-center gap-3 cursor-pointer"
@@ -126,19 +158,21 @@
         ($ :path {:d (if up? "M1.5 7l3.5-4 3.5 4" "M1.5 3l3.5 4 3.5-4")}))))
 
 (defui revealed-section
-  [{:keys [label tasks on-toggle on-collapse above? cursor-key]}]
+  [{:keys [label tasks on-toggle on-collapse above? cursor-key open-note on-pin]}]
   (let [divider ($ reveal-divider {:label label :on-click on-collapse})
         items   ($ task-list {:tasks tasks :on-toggle on-toggle :cursor-key cursor-key
+                              :open-note open-note :on-pin on-pin
                               :class (str "opacity-50 " (if above? "pt-1" "pb-1"))})]
     (if above?
       ($ :<> items divider)
       ($ :<> divider items))))
 
 (defui fold
-  [{:keys [label tasks on-toggle expanded? on-fold top? cursor-key]}]
+  [{:keys [label tasks on-toggle expanded? on-fold top? cursor-key open-note on-pin]}]
   (if expanded?
     ($ revealed-section {:label label :tasks tasks :on-toggle on-toggle
-                         :on-collapse on-fold :above? top? :cursor-key cursor-key})
+                         :on-collapse on-fold :above? top? :cursor-key cursor-key
+                         :open-note open-note :on-pin on-pin})
     ($ :div {:class (str "group/tab absolute inset-x-0 z-10 h-8 flex items-center justify-center "
                          (if top? "top-0 -translate-y-[80%]" "bottom-0 translate-y-[80%]"))}
        ($ reveal-pill {:label label :up? top? :on-click on-fold
@@ -146,7 +180,7 @@
                                    "group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto")}))))
 
 (defui category-card
-  [{:keys [label completed current upcoming on-toggle cursor-key
+  [{:keys [label completed current upcoming on-toggle cursor-key open-note on-pin
            show-completed? show-upcoming? on-toggle-completed on-toggle-upcoming]}]
   ($ :div {:class "rounded-2xl border-2 border-edge bg-surface p-2"}
      ($ card-header {:label label})
@@ -154,15 +188,16 @@
         (when (seq completed)
           ($ fold {:label "Completed" :tasks completed :on-toggle on-toggle
                    :expanded? show-completed? :on-fold on-toggle-completed :top? true
-                   :cursor-key cursor-key}))
+                   :cursor-key cursor-key :open-note open-note :on-pin on-pin}))
         (if (empty? current)
           ($ :p {:class "py-4 text-center text-[15px] font-medium italic text-muted"}
              "All clear!")
-          ($ task-list {:tasks current :on-toggle on-toggle :cursor-key cursor-key}))
+          ($ task-list {:tasks current :on-toggle on-toggle :cursor-key cursor-key
+                        :open-note open-note :on-pin on-pin}))
         (when (seq upcoming)
           ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
                    :expanded? show-upcoming? :on-fold on-toggle-upcoming :top? false
-                   :cursor-key cursor-key})))))
+                   :cursor-key cursor-key :open-note open-note :on-pin on-pin})))))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
@@ -170,6 +205,7 @@
   (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
+        [open-note set-open-note!] (use-state nil)
         cards          (cards/build-cards by-category categories expanded)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
         cursor-key     (:key focused)]
@@ -181,5 +217,6 @@
                            :show-completed? show-completed? :show-upcoming? show-upcoming?
                            :on-toggle toggle
                            :cursor-key cursor-key
+                           :open-note open-note :on-pin set-open-note!
                            :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
                            :on-toggle-upcoming  #(set-expanded! (fn [m] (update-in m [cat :upcoming?] not)))})))))

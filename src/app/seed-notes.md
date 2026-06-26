@@ -62,9 +62,18 @@ lines beneath.
 
 # Descale the kettle `descale-kettle`
 
+Fill to max with half water, half white vinegar.
+Boil, then leave to sit for an hour.
+Tip out, rinse twice, boil once with clean water before use.
+
 # Clean the oven `clean-oven`
 
+Take the racks out and soak them in the bath.
+Spray the cavity, leave it 20 minutes, then wipe down.
+
 # Test the smoke alarms `test-smoke-alarms`
+
+Hold the test button until it sounds. Swap any battery that hesitates.
 
 # Deep clean the bathroom `deep-clean-bath`
 

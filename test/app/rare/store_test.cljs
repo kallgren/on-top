@@ -25,6 +25,15 @@
     (is (= "b" (:name (first (:digital by-cat))))
         "an undefined id falls back to the id as its name")))
 
+(deftest select-carries-note-from-notes-when-present
+  (let [today  (js/Date. 2026 5 16)
+        notes  {"a" {:name "Clean the fridge" :note "Empty shelves first"}}
+        by-cat (store/select {:completions {} :outbox #{}} schedule notes today)]
+    (is (= "Empty shelves first" (:note (first (:household by-cat))))
+        "the task's note rides onto its row")
+    (is (not (contains? (first (:digital by-cat)) :note))
+        "a row whose task has no note carries no :note key")))
+
 (deftest select-keys-done-through-strictly-by-id
   (let [today  (js/Date. 2026 5 16)
         by-cat (store/select {:completions {"a" "2026-06-01"} :outbox #{}}
