@@ -33,8 +33,8 @@
 (defn read-config []
   (try (.getItem js/localStorage config-key) (catch :default _ nil)))
 
-(defn read-schedule-cache [key]
+(defn read-text-cache [key]
   (try (.getItem js/localStorage key) (catch :default _ nil)))
 
-(defn write-schedule-cache! [key edn-string]
-  (try (.setItem js/localStorage key edn-string) (catch :default _ nil)))
+(defn write-text-cache! [key text]
+  (try (.setItem js/localStorage key text) (catch :default _ nil)))

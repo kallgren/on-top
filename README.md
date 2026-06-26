@@ -29,6 +29,7 @@ Runtime settings live in a single device-local JSON blob under the `on-top/confi
 | `coreScheduleUrl` | Gist URL for a custom Core schedule — see [Custom schedule](#custom-schedule) |
 | `rareScheduleUrl` | Gist URL for a custom Rare schedule — see [Custom schedule](#custom-schedule) |
 | `dayScheduleUrl` | Gist URL for a custom Day timetable — see [Custom schedule](#custom-schedule) |
+| `notesUrl` | Gist URL for the global Notes file (Core/Rare names + notes) — see [Notes file](#notes-file) |
 | `completionsDbUrl` | Supabase REST endpoint for the completions table — see [Completion sync](#completion-sync-supabase) |
 | `supabasePublishableKey` | Supabase publishable key |
 
@@ -41,6 +42,7 @@ localStorage.setItem("on-top/config", JSON.stringify({
   coreScheduleUrl: "https://gist.githubusercontent.com/.../raw/core-schedule.edn",
   rareScheduleUrl: "https://gist.githubusercontent.com/.../raw/rare-schedule.edn",
   dayScheduleUrl: "https://gist.githubusercontent.com/.../raw/day-schedule.edn",
+  notesUrl: "https://gist.githubusercontent.com/.../raw/notes.md",
   completionsDbUrl: "https://<project>.supabase.co/rest/v1/completions",
   supabasePublishableKey: "<publishable-key>"
 }))
@@ -60,6 +62,10 @@ Each surface ships with its own seed schedule (`src/app/core/seed.edn`, `src/app
 3. Store it as `coreScheduleUrl`, `rareScheduleUrl`, or `dayScheduleUrl` in `on-top/config` (see [Configuration](#configuration)).
 
 On every load each surface paints instantly from its last good copy (or its seed), then fetches its gist in the background and swaps it in. If a gist is missing, unreachable, or not valid EDN, that surface keeps its last good schedule and falls back to its seed — the reason is logged to the console. To revert a surface to its seed, drop its URL from the config blob and clear its cached copy (`on-top/core-schedule-cache`, `on-top/rare-schedule-cache`, or `on-top/day-schedule-cache`); removing only the URL stops refreshing but the last cached gist still shows.
+
+## Notes file
+
+Core and Rare schedules carry only ids; each task's display **name** and optional **note** live in one global Markdown notes file, shared across both surfaces (Day keeps its names inline). Override the seed (`src/app/seed-notes.md`) by pointing `notesUrl` at a [gist](https://gist.github.com), using the same **raw-latest** URL as a [custom schedule](#custom-schedule). For the authoring format, see [docs/notes-format.md](docs/notes-format.md).
 
 ## Completion sync (Supabase)
 

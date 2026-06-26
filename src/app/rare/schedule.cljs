@@ -79,22 +79,20 @@
   Each row declares the `:set-done-through` it writes on click, so the toggle handler
   is a plain `(assoc completions id set-done-through)` with no branching on row type."
   [category freq task done-through-iso today]
-  (let [{:keys [id name anchor before]} task
+  (let [{:keys [id anchor before]} task
         before    (or before 0)
         step      (interval->step freq)
         anchor-d  (parse-month-day anchor (.getFullYear today))
         lead-ceil (js/Date. (+ (.getTime today) (* before 86400000)))
         ld        (latest-due anchor-d step lead-ceil)
         dt        (when done-through-iso (iso->date done-through-iso))
-        tid       (or id name)
         behind?   (and dt (< (.getTime dt) (.getTime ld)))
         caught?   (and dt (>= (.getTime dt) (.getTime ld)))
         pending   (when behind? (pending-after dt step lead-ceil))
         row       (fn [role occ extra]
                     (merge
-                     {:id          tid
+                     {:id          id
                       :category    category
-                      :name        name
                       :freq        freq
                       :display-iso (iso-date occ)
                       :sort-key    (.getTime occ)
@@ -102,7 +100,7 @@
                       :done?       false
                       :upcoming?   false
                       :missed      0
-                      :key         (str tid "/" role)}
+                      :key         (str id "/" role)}
                      extra))]
     (cond-> []
       ;; completed (inline) — emitted whenever a done-through exists
@@ -124,12 +122,12 @@
 
 (defn derive-schedule
   "Flat seq of collapsed rows over every category/interval/task in `schedule`,
-  looking up each task's done-through in `completions` by id (fallback name). See
-  `task-rows` for the placement model."
+  looking up each task's done-through in `completions` by id. Rows carry no
+  display name; names are joined on at the Rare boundary. See `task-rows` for the
+  placement model."
   [schedule completions today]
   (for [[category intervals] schedule
         [freq tasks] intervals
         task tasks
-        :let [tid (or (:id task) (:name task))]
-        row (task-rows category freq task (get completions tid) today)]
+        row (task-rows category freq task (get completions (:id task)) today)]
     row))

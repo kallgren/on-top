@@ -2,6 +2,9 @@
   (:require [uix.core :refer [defui $ use-state]]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
+            [app.keybinding :refer [use-hotkey]]
+            [app.keymap :as keymap]
+            [app.modal :as modal]
             [app.rare.cards :as cards]
             [app.rare.store :as store]
             [app.shared.schedule :as sched]
@@ -38,15 +41,18 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-(defui round-checkbox [{:keys [checked? class]}]
-  ($ :span
-     {:aria-hidden true
+(defui round-checkbox [{:keys [checked? on-toggle reveal-class]}]
+  ($ :button
+     {:type "button"
+      :aria-pressed checked?
+      :aria-label "Toggle done"
+      :on-click (fn [e] (.stopPropagation e) (on-toggle))
       :class (str "shrink-0 w-4 h-4 rounded-full border-2 cursor-pointer "
                   "flex items-center justify-center "
                   (if checked?
                     "bg-done border-done"
                     "bg-transparent border-edge")
-                  (when class (str " " class)))}
+                  " " reveal-class)}
      (when checked?
        ($ :svg {:viewBox "0 0 10 10" :class "w-2.5 h-2.5 text-white" :fill "none"
                 :stroke "currentColor" :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"}
@@ -56,12 +62,33 @@
   ($ :span {:class "rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-edge/40 text-heading"}
      freq))
 
-(defui task-row [{:keys [row on-toggle at-cursor?]}]
-  (let [{:keys [name freq display-iso due-label done? missed]} row
+(defui note-marker []
+  ($ :span {:aria-hidden true
+            :class "shrink-0 flex h-5 w-5 items-center justify-center text-heading/35"}
+     ($ :svg {:viewBox "0 0 24 24" :class "h-5 w-5" :fill "none" :stroke "currentColor"
+              :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"}
+        ($ :circle {:cx 12 :cy 12 :r 9})
+        ($ :line {:x1 12 :y1 11 :x2 12 :y2 16})
+        ($ :line {:x1 12 :y1 7.5 :x2 12 :y2 7.5}))))
+
+(defui details-modal [{:keys [row on-close]}]
+  (let [{:keys [name note]} row]
+    ($ modal/shell
+       {:title name
+        :on-close on-close
+        :close-key (keymap/key-of :open-details)
+        :body ($ :<>
+                 ($ :h2 {:class "text-[20px] font-bold text-label first-letter:uppercase"} name)
+                 (when note
+                   ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note)))})))
+
+(defui task-row [{:keys [row on-toggle on-open-details at-cursor?]}]
+  (let [{:keys [name note freq display-iso due-label done? missed]} row
         due                due-label
         {:keys [rel full today-or-yesterday?]} (date-display display-iso)]
-    ($ :button
-       {:on-click #(on-toggle row)
+    ($ :div
+       {:role "button"
+        :on-click #(on-open-details row)
         ;; A focused row wears the hover face steadily plus the Cursor ring, so it
         ;; reads the same as a hovered row.
         :class (str "group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg "
@@ -72,9 +99,10 @@
                       at-cursor?           (str "bg-page " cursor/cursor-ring " ")
                       :else                "hover:bg-page "))}
        ($ round-checkbox {:checked? done?
-                          :class (if at-cursor?
-                                   "pointer-events-none flex"
-                                   "pointer-events-none hidden group-hover:flex")})
+                          :on-toggle #(on-toggle row)
+                          :reveal-class (if at-cursor?
+                                          "flex"
+                                          "hidden group-hover:flex")})
        ($ :span {:class (str "text-[15px] font-medium leading-snug text-label "
                              (when done? "line-through"))}
           name)
@@ -86,17 +114,20 @@
          ($ :span {:class "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-red-500/12 text-red-500"}
             (str missed " missed")))
        ($ :div {:class "flex-1"})
+       (when note
+         ($ note-marker))
        (when (or done? (not today-or-yesterday?))
          ($ :span {:class "text-[13px] font-semibold tabular-nums text-muted"} full))
        ($ freq-badge {:freq freq}))))
 
-(defui task-list [{:keys [tasks on-toggle class cursor-key]}]
+(defui task-list [{:keys [tasks on-toggle on-open-details class cursor-key]}]
   ($ :div {:class (str "flex flex-col" (when class (str " " class)))}
      (for [t tasks]
-       ($ task-row {:key        (:key t)
-                    :row        t
-                    :on-toggle  on-toggle
-                    :at-cursor? (= (:key t) cursor-key)}))))
+       ($ task-row {:key             (:key t)
+                    :row             t
+                    :on-toggle       on-toggle
+                    :on-open-details on-open-details
+                    :at-cursor?      (= (:key t) cursor-key)}))))
 
 (defui reveal-divider [{:keys [label on-click]}]
   ($ :div {:class "group/rev mx-4 my-1 flex items-center gap-3 cursor-pointer"
@@ -126,18 +157,20 @@
         ($ :path {:d (if up? "M1.5 7l3.5-4 3.5 4" "M1.5 3l3.5 4 3.5-4")}))))
 
 (defui revealed-section
-  [{:keys [label tasks on-toggle on-collapse above? cursor-key]}]
+  [{:keys [label tasks on-toggle on-open-details on-collapse above? cursor-key]}]
   (let [divider ($ reveal-divider {:label label :on-click on-collapse})
-        items   ($ task-list {:tasks tasks :on-toggle on-toggle :cursor-key cursor-key
+        items   ($ task-list {:tasks tasks :on-toggle on-toggle :on-open-details on-open-details
+                              :cursor-key cursor-key
                               :class (str "opacity-50 " (if above? "pt-1" "pb-1"))})]
     (if above?
       ($ :<> items divider)
       ($ :<> divider items))))
 
 (defui fold
-  [{:keys [label tasks on-toggle expanded? on-fold top? cursor-key]}]
+  [{:keys [label tasks on-toggle on-open-details expanded? on-fold top? cursor-key]}]
   (if expanded?
     ($ revealed-section {:label label :tasks tasks :on-toggle on-toggle
+                         :on-open-details on-open-details
                          :on-collapse on-fold :above? top? :cursor-key cursor-key})
     ($ :div {:class (str "group/tab absolute inset-x-0 z-10 h-8 flex items-center justify-center "
                          (if top? "top-0 -translate-y-[80%]" "bottom-0 translate-y-[80%]"))}
@@ -146,33 +179,39 @@
                                    "group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto")}))))
 
 (defui category-card
-  [{:keys [label completed current upcoming on-toggle cursor-key
+  [{:keys [label completed current upcoming on-toggle on-open-details cursor-key
            show-completed? show-upcoming? on-toggle-completed on-toggle-upcoming]}]
   ($ :div {:class "rounded-2xl border-2 border-edge bg-surface p-2"}
      ($ card-header {:label label})
      ($ :div {:class "relative"}
         (when (seq completed)
           ($ fold {:label "Completed" :tasks completed :on-toggle on-toggle
+                   :on-open-details on-open-details
                    :expanded? show-completed? :on-fold on-toggle-completed :top? true
                    :cursor-key cursor-key}))
         (if (empty? current)
           ($ :p {:class "py-4 text-center text-[15px] font-medium italic text-muted"}
              "All clear!")
-          ($ task-list {:tasks current :on-toggle on-toggle :cursor-key cursor-key}))
+          ($ task-list {:tasks current :on-toggle on-toggle :on-open-details on-open-details
+                        :cursor-key cursor-key}))
         (when (seq upcoming)
           ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
+                   :on-open-details on-open-details
                    :expanded? show-upcoming? :on-fold on-toggle-upcoming :top? false
                    :cursor-key cursor-key})))))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today cursor]}]
+(defui view [{:keys [today cursor notes]}]
   (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
-        [by-category toggle] (store/use-store today schedule)
+        [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
+        [details set-details!] (use-state nil)
         cards          (cards/build-cards by-category categories expanded)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
         cursor-key     (:key focused)]
+    (use-hotkey (keymap/key-of :open-details)
+                #(when focused (set-details! focused)))
     ($ :div {:class "flex flex-col gap-4"}
        (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
          ($ category-card {:key       (str cat)
@@ -180,6 +219,9 @@
                            :completed completed :current current :upcoming upcoming
                            :show-completed? show-completed? :show-upcoming? show-upcoming?
                            :on-toggle toggle
+                           :on-open-details set-details!
                            :cursor-key cursor-key
                            :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
-                           :on-toggle-upcoming  #(set-expanded! (fn [m] (update-in m [cat :upcoming?] not)))})))))
+                           :on-toggle-upcoming  #(set-expanded! (fn [m] (update-in m [cat :upcoming?] not)))}))
+       (when details
+         ($ details-modal {:row details :on-close #(set-details! nil)})))))

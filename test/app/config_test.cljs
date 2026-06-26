@@ -6,12 +6,14 @@
   (is (= {:completions-db-url       "https://x.supabase.co/rest/v1/completions"
           :supabase-publishable-key "sb_publishable_x"
           :core-schedule-url        "https://gist.example/core"
-          :rare-schedule-url        "https://gist.example/rare"}
+          :rare-schedule-url        "https://gist.example/rare"
+          :notes-url                "https://gist.example/notes"}
          (config/parse-config
           (str "{\"completionsDbUrl\": \"https://x.supabase.co/rest/v1/completions\", "
                "\"supabasePublishableKey\": \"sb_publishable_x\", "
                "\"coreScheduleUrl\": \"https://gist.example/core\", "
-               "\"rareScheduleUrl\": \"https://gist.example/rare\"}")))))
+               "\"rareScheduleUrl\": \"https://gist.example/rare\", "
+               "\"notesUrl\": \"https://gist.example/notes\"}")))))
 
 (deftest parse-config-maps-completions-db-url
   (is (= {:completions-db-url "https://x.supabase.co/rest/v1/completions"}
@@ -29,6 +31,10 @@
 (deftest parse-config-maps-rare-schedule-url
   (is (= {:rare-schedule-url "https://gist.example/rare"}
          (config/parse-config "{\"rareScheduleUrl\": \"https://gist.example/rare\"}"))))
+
+(deftest parse-config-maps-notes-url
+  (is (= {:notes-url "https://gist.example/notes"}
+         (config/parse-config "{\"notesUrl\": \"https://gist.example/notes\"}"))))
 
 (deftest parse-config-ignores-unknown-keys
   (is (= {:core-schedule-url "https://gist.example/core"}
@@ -75,7 +81,8 @@
              (str "{\"completionsDbUrl\": \"x\", "
                   "\"supabasePublishableKey\": \"y\", "
                   "\"coreScheduleUrl\": \"z\", "
-                  "\"rareScheduleUrl\": \"w\"}"))))
+                  "\"rareScheduleUrl\": \"w\", "
+                  "\"notesUrl\": \"n\"}"))))
   (is (nil? (config/unknown-keys "{}"))))
 
 (deftest unknown-keys-of-unparseable-or-non-object-is-nil

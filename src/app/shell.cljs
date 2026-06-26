@@ -2,15 +2,24 @@
   (:require [uix.core :refer [defui defhook $ use-state use-ref use-effect use-layout-effect use-callback]]
             [uix.dom]
             [app.config :as config]
+            [app.core.tasks :as tasks]
             [app.core.view :as core]
             [app.day.view :as day]
             [app.help :as help]
             [app.keybinding :as keybinding]
             [app.keymap :as keymap]
+            [app.notes :as notes]
             [app.rare.view :as rare]
+            [app.shared.notes :as shared-notes]
+            [app.shared.schedule :as sched]
             [app.shared.today :refer [use-today]]
             [app.storage :as storage]
-            [app.timer :refer [timer]]))
+            [app.timer :refer [timer use-timer]]
+            [shadow.resource :as rc]))
+
+;; ── Notes floor ──────────────────────────────────────────────────────────────
+
+(def seed-notes (notes/parse (rc/inline "app/seed-notes.md")))
 
 ;; ── Header ───────────────────────────────────────────────────────────────────
 
@@ -125,7 +134,7 @@
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide?]}]
+(defui surfaces [{:keys [today wide? notes schedule]}]
   (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
         {:keys [rare-hidden? core rare]} (use-pane-cursor)]
     ($ :<>
@@ -136,11 +145,11 @@
              (when-not wide? ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
-                ($ core/view {:today today :cursor core})))
+                ($ core/view {:today today :cursor core :notes notes :schedule schedule})))
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today :cursor rare}))))
+                ($ rare/view {:today today :cursor rare :notes notes}))))
        ($ pane-dots {:active active :on-select scroll-to}))))
 
 ;; ── Desktop drawer ───────────────────────────────────────────────────────────
@@ -163,11 +172,17 @@
 
 (defui app []
   (let [today (use-today)
-        wide? (use-wide?)]
+        wide? (use-wide?)
+        notes (shared-notes/use-notes seed-notes)
+        schedule (sched/use-schedule :core-schedule-url core/schedule-cache-key core/seed-schedule)
+        focus-notes (tasks/todays-notes schedule today core/category-keys notes)
+        {:keys [running? items start! stop!]} (use-timer)
+        go! #(start! focus-notes)]
+    (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide?})
-       ($ timer)
+       ($ surfaces {:today today :wide? wide? :notes notes :schedule schedule})
+       ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
        ($ help/view)
        (when wide? ($ day-drawer {:today today})))))
 

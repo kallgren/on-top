@@ -32,5 +32,5 @@
                  (on-ok raw parsed)
                  (throw (js/Error. "not a valid schedule")))))
       (.catch (fn [err]
-                (js/console.warn "on-top: ignoring remote schedule —"
+                (js/console.warn (str "on-top: ignoring remote schedule (" url ") —")
                                  (.-message err))))))

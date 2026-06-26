@@ -14,7 +14,7 @@
          (fn []
            (sched/schedule-source
             {:config-url (config-key (config/parse-config (storage/read-config)))
-             :cached     (storage/read-schedule-cache cache-key)
+             :cached     (storage/read-text-cache cache-key)
              :seed       seed})))
         [schedule set-schedule!] (use-state initial)]
     (use-effect
@@ -22,7 +22,7 @@
        (when url
          (sched/fetch-schedule! url
                                 (fn [raw parsed]
-                                  (storage/write-schedule-cache! cache-key raw)
+                                  (storage/write-text-cache! cache-key raw)
                                   (set-schedule! parsed))))
        js/undefined)
      [cache-key url])
