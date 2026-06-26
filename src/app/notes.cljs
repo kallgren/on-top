@@ -117,5 +117,5 @@
                  (on-ok raw parsed)
                  (throw (js/Error. "no task definitions")))))
       (.catch (fn [err]
-                (js/console.warn "on-top: ignoring remote notes —"
+                (js/console.warn (str "on-top: ignoring remote notes (" url ") —")
                                  (.-message err))))))
