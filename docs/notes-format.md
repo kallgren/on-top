@@ -1,29 +1,15 @@
 # Task notes format
 
-How a task's **name** and **note** are authored and parsed. This is the
-one bespoke format in the product; everything here is operational detail. For
-what the terms mean (Task, Task id, Schedule, Notes file, Task definition, Note),
-see [CONTEXT-MAP.md](../CONTEXT-MAP.md).
+One global Markdown file gives every Core and Rare task its display **name** and
+optional **note** — one definition per task, keyed by **id** and shared across both
+surfaces. A name lives in exactly this one place, so reword it here without
+touching identity or Done-through; the binding is the id. Day is out of scope: its
+schedule keeps names inline and never consults this file.
 
-## Architecture
+This is the one bespoke format in the product. For what the terms mean (Task, Task
+id, Notes file, Note), see [CONTEXT-MAP.md](../CONTEXT-MAP.md).
 
-Two kinds of file, joined by **id**:
-
-- **Core and Rare schedules drop names.** They carry ids and recurrence only —
-  never names or notes. Each keeps its own shape:
-  - **Core** — arrays of id strings:
-    `{:digital {:week-odd {:monday ["gmail"] …}}}`
-  - **Rare** — maps without `:name` (`:anchor`, optional `:before`):
-    `{:digital {"monthly" [{:id "back-up-files" :anchor "Jun 14"} …]}}`
-- **One global Markdown notes file** holds every Core/Rare task's name + note,
-  one definition per task, keyed by id, shared across Core and Rare.
-- **Day is out of scope.** The Day schedule keeps its names inline
-  (`{:id … :name … :start … :end …}`) and never consults the notes file.
-
-A Core/Rare name lives in exactly one place — the notes file. Reword it there
-without touching identity or Done-through, because the binding is the id.
-
-## Notes file — grammar
+## Grammar
 
 Applied after the input is normalised (CRLF → LF, leading BOM stripped).
 
@@ -41,7 +27,7 @@ opt-ws = { " " | "\t" } ;  ws = ( " " | "\t" ) , { " " | "\t" } ;
 lower  = "a".."z" ;  digit = "0".."9" ;
 ```
 
-## Notes file — resolved semantics
+## Resolved semantics
 
 The grammar is a skeleton; these rules pin down what it can't express.
 
@@ -67,27 +53,17 @@ The grammar is a skeleton; these rules pin down what it can't express.
 
 ## id
 
-`[a-z0-9-]+` — lowercase letters, digits, dashes. Matching between a schedule and
-the notes file is exact and case-sensitive; the same charset is enforced on
-schedule ids, so the two sides cannot drift on case.
-
-Ids are globally unique across all three surfaces — stricter than per-surface
-done-through storage strictly requires (see
-[docs/adr/0009](adr/0009-per-surface-completions-with-surface-discriminator.md)),
-adopted so the notes file can key every Core/Rare definition by id alone. A
-shared id therefore means a shared name and note, by design. Day participates in
-the same global id namespace but draws its names from its own schedule, so a
-notes definition matching only a Day id is an orphan (below).
+`[a-z0-9-]+` — lowercase letters, digits, dashes. Matching against a schedule is
+exact and case-sensitive. Ids are globally unique across surfaces, so a definition
+shared by a Core and a Rare task gives both the same name and note, by design.
 
 ## Diagnostics
 
 The notes file is enrichment, not structure: it never hard-fails the product. It
-warns and degrades, the product running on id-fallback names. Hard failure —
-falling back to the compiled-in seed — stays a *schedule-EDN* behaviour only.
+warns and degrades, the product running on id-fallback names.
 
 | Condition | Tier | Behaviour |
 |---|---|---|
-| Schedule EDN unparseable | Hard | Fall back to seed/cache + warn *(existing)* |
 | Notes file unfetchable / not text | Warn | No notes; all names = id |
 | Text before the first heading | Silent | Ignored |
 | Heading with no / malformed / empty id | Warn | Skip that definition |
