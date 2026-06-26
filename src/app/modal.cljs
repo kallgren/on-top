@@ -4,18 +4,21 @@
    the `data-capture-keys` marker that sends every other hotkey dormant while it's
    open, and the Escape-to-close keydown listener. Callers pass a `title` (the
    dialog's accessible name), a `body` (the card's contents, heading and all), and
-   an `on-close` callback; what fills the card stays with each caller."
+   an `on-close` callback; what fills the card stays with each caller. An optional
+   `close-key` also closes on that key, so a caller can make the hotkey that opened
+   the modal toggle it shut again — keep it derived from app.keymap, not hardcoded."
   (:require [uix.core :refer [defui $ use-effect]]))
 
-(defui shell [{:keys [title body on-close]}]
+(defui shell [{:keys [title body on-close close-key]}]
   (use-effect
    (fn []
      (let [on-key (fn [e]
-                    (when (= "Escape" (.-key e))
+                    (when (or (= "Escape" (.-key e))
+                              (and close-key (= close-key (.-key e))))
                       (on-close)))]
        (.addEventListener js/window "keydown" on-key)
        #(.removeEventListener js/window "keydown" on-key)))
-   [on-close])
+   [on-close close-key])
   ($ :div {:data-capture-keys true
            :on-click on-close
            :class "fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-6"}

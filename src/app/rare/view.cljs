@@ -76,6 +76,7 @@
     ($ modal/shell
        {:title name
         :on-close on-close
+        :close-key (keymap/key-of :open-details)
         :body ($ :<>
                  ($ :h2 {:class "text-[20px] font-bold text-label first-letter:uppercase"} name)
                  (when note

@@ -4,11 +4,11 @@
    click of the wide-only top-right glyph, and renders app.keymap so the list can
    never drift from the live bindings. It renders through app.modal/shell, which
    supplies the backdrop, card, ✕, `data-capture-keys` marker and Escape-to-close;
-   the overlay adds only its own listener so `?` toggles it shut. Keyboard-only:
+   passing the shell `:close-key` makes `?` toggle it shut too. Keyboard-only:
    the glyph shows at the wide breakpoint and the overlay is unreachable on touch.
    The shell mounts `view` once and knows nothing else — so the glyph is a
    one-line removal."
-  (:require [uix.core :refer [defui $ use-state use-effect]]
+  (:require [uix.core :refer [defui $ use-state]]
             [app.keybinding :refer [use-hotkey]]
             [app.keymap :as keymap]
             [app.modal :as modal]))
@@ -33,17 +33,10 @@
           ($ shortcut-row {:key (:id b) :binding b})))))
 
 (defui overlay [{:keys [on-close]}]
-  (use-effect
-   (fn []
-     (let [on-key (fn [e]
-                    (when (= "?" (.-key e))
-                      (on-close)))]
-       (.addEventListener js/window "keydown" on-key)
-       #(.removeEventListener js/window "keydown" on-key)))
-   [on-close])
   ($ modal/shell
      {:title "Keyboard shortcuts"
       :on-close on-close
+      :close-key (keymap/key-of :help)
       :body ($ :<>
                ($ :h2 {:class "mb-6 text-[15px] font-bold uppercase tracking-[0.2em] text-heading"}
                   "Keyboard shortcuts")
