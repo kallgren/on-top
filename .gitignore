@@ -8,8 +8,6 @@ public/css/
 .clj-kondo/.cache/
 .lsp/
 .vercel
-.claude/
+.claude/settings.local.json
 ralph/
-docs/agents/
-CLAUDE.md
 .env*.local
