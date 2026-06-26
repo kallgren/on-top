@@ -2,6 +2,8 @@
   (:require [uix.core :refer [defui $ use-state]]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
+            [app.keybinding :refer [use-hotkey]]
+            [app.keymap :as keymap]
             [app.rare.cards :as cards]
             [app.rare.store :as store]
             [app.shared.schedule :as sched]
@@ -19,6 +21,22 @@
    [:household "Household"]])
 
 ;; ── Helpers ──────────────────────────────────────────────────────────────────
+
+(defn toggle-open
+  "The next open-note id given the currently open one and the row `id` acted on:
+   opens `id`, or closes it when `id` is already the open note."
+  [current id]
+  (when-not (= current id) id))
+
+(defn note-key-target
+  "The next open-note id after the toggle-note key, given the Cursor's `focused`
+   row (nil when dormant or on another Surface) and the `current` open note.
+   Toggles the row's own note when it bears one; a no-op — `current` unchanged —
+   for a dormant Cursor or a note-less row."
+  [focused current]
+  (if-let [id (and (:note focused) (:id focused))]
+    (toggle-open current id)
+    current))
 
 (defn date-display [iso-str]
   (let [now       (js/Date.)
@@ -122,7 +140,7 @@
        (when note
          ($ note-indicator {:note note
                             :pinned? pinned?
-                            :on-toggle-pin #(on-pin (fn [cur] (when-not (= cur id) id)))
+                            :on-toggle-pin #(on-pin (fn [cur] (toggle-open cur id)))
                             :on-start #(on-focus {:name name :note note})}))
        (when (or done? (not today-or-yesterday?))
          ($ :span {:class "text-[13px] font-semibold tabular-nums text-muted"} full))
@@ -218,6 +236,8 @@
         cards          (cards/build-cards by-category categories expanded)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
         cursor-key     (:key focused)]
+    (use-hotkey (keymap/key-of :toggle-note)
+                #(set-open-note! (fn [cur] (note-key-target focused cur))))
     ($ :div {:class "flex flex-col gap-4"}
        (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
          ($ category-card {:key       (str cat)

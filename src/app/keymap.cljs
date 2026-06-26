@@ -19,6 +19,7 @@
    {:id :toggle-task  :key "e" :group :actions :desc "Toggle the task under the cursor"}
    {:id :toggle-rare  :key "r" :group :actions :desc "Show or hide the Rare pane"}
    {:id :toggle-timer :key "g" :group :actions :desc "Start or stop the timer"}
+   {:id :toggle-note  :key "i" :group :actions :desc "Show or hide the note under the cursor"}
    {:id :dismiss      :key "Escape" :cap "Esc" :group :general :desc "Dismiss the cursor"}
    {:id :help         :key "?" :group :general :desc "Show this shortcuts list"}])
 
