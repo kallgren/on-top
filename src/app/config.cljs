@@ -1,18 +1,21 @@
 (ns app.config
   "Device-local remote config: a single localStorage JSON blob holding the
-   completions DB URL, Supabase publishable key, a per-surface Schedule gist URL
-   (one for Core, one for Rare, one for Day), and the global Notes-file gist URL.
-   The blob uses camelCase JSON keys; parse-config maps them to kebab keywords.
-   See docs/adr/0007 and docs/adr/0010."
+   completions DB URL, Supabase publishable key, and one gist URL holding every
+   remote file — the Core, Rare, and Day Schedules and the global Notes file,
+   under fixed names (core.edn, rare.edn, day.edn, notes.md). The blob uses
+   camelCase JSON keys; parse-config maps them to kebab keywords. See
+   docs/adr/0007 and docs/adr/0010."
   (:require [clojure.string :as str]))
 
 (def ^:private key->keyword
   {"completionsDbUrl"       :completions-db-url
    "supabasePublishableKey" :supabase-publishable-key
-   "coreScheduleUrl"        :core-schedule-url
-   "rareScheduleUrl"        :rare-schedule-url
-   "dayScheduleUrl"         :day-schedule-url
-   "notesUrl"               :notes-url})
+   "gistUrl"                :gist-url})
+
+(def core-schedule-file "core.edn")
+(def rare-schedule-file "rare.edn")
+(def day-schedule-file "day.edn")
+(def notes-file "notes.md")
 
 (def ^:private known-keys (set (keys key->keyword)))
 
@@ -41,3 +44,15 @@
 (defn remote-creds [{:keys [completions-db-url supabase-publishable-key]}]
   (when (and (not-empty completions-db-url) (not-empty supabase-publishable-key))
     {:url completions-db-url :key supabase-publishable-key}))
+
+(defn gist-file-url
+  "The raw-latest URL for `filename` within the configured gist, or nil when no
+   gist is set. GitHub serves a gist file's newest revision at .../raw/<name>,
+   so any gist URL (page or raw) reduces to the host swap plus that suffix."
+  [{:keys [gist-url]} filename]
+  (when-let [base (not-empty gist-url)]
+    (-> base
+        (str/replace #"/raw(/[^/]*)?/?$" "")
+        (str/replace #"/+$" "")
+        (str/replace "gist.github.com" "gist.githubusercontent.com")
+        (str "/raw/" filename))))

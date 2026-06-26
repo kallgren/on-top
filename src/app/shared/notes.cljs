@@ -1,6 +1,6 @@
 (ns app.shared.notes
   "Cross-cutting Notes hook: paint from the last-good cache over the compiled-in
-   seed floor, then revalidate from the global Notes gist in the background (SWR),
+   seed floor, then revalidate from the gist's notes.md in the background (SWR),
    swapping in a fetched lookup only on a clean parse. Instantiated once in the
    shell and threaded into Core (later Rare too); Day never consults it. See
    docs/adr/0005."
@@ -16,7 +16,7 @@
         (use-state
          (fn []
            (notes/notes-source
-            {:config-url (:notes-url (config/parse-config (storage/read-config)))
+            {:config-url (config/gist-file-url (config/parse-config (storage/read-config)) config/notes-file)
              :cached     (storage/read-text-cache cache-key)
              :seed       seed})))
         [notes set-notes!] (use-state initial)]

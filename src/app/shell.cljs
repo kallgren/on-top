@@ -174,7 +174,7 @@
   (let [today (use-today)
         wide? (use-wide?)
         notes (shared-notes/use-notes seed-notes)
-        schedule (sched/use-schedule :core-schedule-url core/schedule-cache-key core/seed-schedule)
+        schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
         focus-notes (tasks/todays-notes schedule today core/category-keys notes)
         {:keys [running? items start! stop!]} (use-timer)
         go! #(start! focus-notes)]

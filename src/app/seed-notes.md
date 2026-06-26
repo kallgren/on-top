@@ -2,7 +2,7 @@
 On Top — the compiled-in Notes floor.
 
 Every Core and Rare task id has a definition here so first paint shows real names
-with no raw-id flash, even before a configured notesUrl loads. A remote Notes file
+with no raw-id flash, even before a configured gist's notes.md loads. A remote Notes file
 overrides this in the background; this file is the last resort. Run through
 app.notes/parse at startup, so it dogfoods the real parser.
 

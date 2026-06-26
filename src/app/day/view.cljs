@@ -1,5 +1,6 @@
 (ns app.day.view
   (:require [uix.core :refer [defui $ use-state use-ref use-layout-effect]]
+            [app.config :as config]
             [app.date-utils :as dates]
             [app.day.layout :as layout]
             [app.day.store :as store]
@@ -116,5 +117,5 @@
           ($ now-line {:now-off now-off :now-min now-min})))))
 
 (defui view [{:keys [today]}]
-  (let [schedule (sched/use-schedule :day-schedule-url schedule-cache-key seed-schedule)]
+  (let [schedule (sched/use-schedule config/day-schedule-file schedule-cache-key seed-schedule)]
     ($ timetable {:key (dates/iso-date today) :today today :schedule schedule})))

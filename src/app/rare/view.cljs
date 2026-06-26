@@ -1,5 +1,6 @@
 (ns app.rare.view
   (:require [uix.core :refer [defui $ use-state]]
+            [app.config :as config]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
             [app.keybinding :refer [use-hotkey]]
@@ -203,7 +204,7 @@
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui view [{:keys [today cursor notes]}]
-  (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
+  (let [schedule       (sched/use-schedule config/rare-schedule-file schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         [details set-details!] (use-state nil)

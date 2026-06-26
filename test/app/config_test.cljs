@@ -5,15 +5,11 @@
 (deftest parse-config-reads-a-full-blob
   (is (= {:completions-db-url       "https://x.supabase.co/rest/v1/completions"
           :supabase-publishable-key "sb_publishable_x"
-          :core-schedule-url        "https://gist.example/core"
-          :rare-schedule-url        "https://gist.example/rare"
-          :notes-url                "https://gist.example/notes"}
+          :gist-url                 "https://gist.github.com/me/abc"}
          (config/parse-config
           (str "{\"completionsDbUrl\": \"https://x.supabase.co/rest/v1/completions\", "
                "\"supabasePublishableKey\": \"sb_publishable_x\", "
-               "\"coreScheduleUrl\": \"https://gist.example/core\", "
-               "\"rareScheduleUrl\": \"https://gist.example/rare\", "
-               "\"notesUrl\": \"https://gist.example/notes\"}")))))
+               "\"gistUrl\": \"https://gist.github.com/me/abc\"}")))))
 
 (deftest parse-config-maps-completions-db-url
   (is (= {:completions-db-url "https://x.supabase.co/rest/v1/completions"}
@@ -24,33 +20,25 @@
   (is (= {:supabase-publishable-key "sb_publishable_x"}
          (config/parse-config "{\"supabasePublishableKey\": \"sb_publishable_x\"}"))))
 
-(deftest parse-config-maps-core-schedule-url
-  (is (= {:core-schedule-url "https://gist.example/core"}
-         (config/parse-config "{\"coreScheduleUrl\": \"https://gist.example/core\"}"))))
-
-(deftest parse-config-maps-rare-schedule-url
-  (is (= {:rare-schedule-url "https://gist.example/rare"}
-         (config/parse-config "{\"rareScheduleUrl\": \"https://gist.example/rare\"}"))))
-
-(deftest parse-config-maps-notes-url
-  (is (= {:notes-url "https://gist.example/notes"}
-         (config/parse-config "{\"notesUrl\": \"https://gist.example/notes\"}"))))
+(deftest parse-config-maps-gist-url
+  (is (= {:gist-url "https://gist.github.com/me/abc"}
+         (config/parse-config "{\"gistUrl\": \"https://gist.github.com/me/abc\"}"))))
 
 (deftest parse-config-ignores-unknown-keys
-  (is (= {:core-schedule-url "https://gist.example/core"}
+  (is (= {:gist-url "https://gist.github.com/me/abc"}
          (config/parse-config
-          "{\"coreScheduleUrl\": \"https://gist.example/core\", \"bogus\": \"x\"}"))))
+          "{\"gistUrl\": \"https://gist.github.com/me/abc\", \"bogus\": \"x\"}"))))
 
-(deftest parse-config-ignores-the-renamed-single-schedule-url
-  (is (= {} (config/parse-config "{\"scheduleUrl\": \"https://gist.example/raw\"}")))
-  (is (= ["scheduleUrl"]
-         (config/unknown-keys "{\"scheduleUrl\": \"https://gist.example/raw\"}"))))
+(deftest parse-config-ignores-the-retired-per-surface-urls
+  (is (= {} (config/parse-config "{\"coreScheduleUrl\": \"https://gist.example/core\"}")))
+  (is (= ["coreScheduleUrl"]
+         (config/unknown-keys "{\"coreScheduleUrl\": \"https://gist.example/core\"}"))))
 
 (deftest parse-config-ignores-non-string-values
-  (is (= {} (config/parse-config "{\"coreScheduleUrl\": 42}"))))
+  (is (= {} (config/parse-config "{\"gistUrl\": 42}"))))
 
 (deftest parse-config-of-unparseable-input-is-empty
-  (is (= {} (config/parse-config "{\"coreScheduleUrl\": not closed"))))
+  (is (= {} (config/parse-config "{\"gistUrl\": not closed"))))
 
 (deftest parse-config-of-non-object-json-is-empty
   (is (= {} (config/parse-config "[\"https://gist.example/raw\"]")))
@@ -59,6 +47,23 @@
 (deftest parse-config-of-absent-or-blank-is-empty
   (is (= {} (config/parse-config nil)))
   (is (= {} (config/parse-config ""))))
+
+(deftest gist-file-url-derives-a-raw-latest-url-from-a-gist-page-url
+  (is (= "https://gist.githubusercontent.com/me/abc/raw/core.edn"
+         (config/gist-file-url {:gist-url "https://gist.github.com/me/abc"} "core.edn"))))
+
+(deftest gist-file-url-tolerates-a-trailing-slash
+  (is (= "https://gist.githubusercontent.com/me/abc/raw/notes.md"
+         (config/gist-file-url {:gist-url "https://gist.github.com/me/abc/"} "notes.md"))))
+
+(deftest gist-file-url-rewrites-a-raw-file-url-onto-the-target-file
+  (is (= "https://gist.githubusercontent.com/me/abc/raw/day.edn"
+         (config/gist-file-url
+          {:gist-url "https://gist.githubusercontent.com/me/abc/raw/core.edn"} "day.edn"))))
+
+(deftest gist-file-url-is-nil-without-a-gist
+  (is (nil? (config/gist-file-url {} "core.edn")))
+  (is (nil? (config/gist-file-url {:gist-url ""} "core.edn"))))
 
 (deftest remote-creds-when-url-and-key-are-both-present
   (is (= {:url "https://x.supabase.co/rest/v1/completions" :key "sb_publishable_x"}
@@ -80,12 +85,10 @@
   (is (nil? (config/unknown-keys
              (str "{\"completionsDbUrl\": \"x\", "
                   "\"supabasePublishableKey\": \"y\", "
-                  "\"coreScheduleUrl\": \"z\", "
-                  "\"rareScheduleUrl\": \"w\", "
-                  "\"notesUrl\": \"n\"}"))))
+                  "\"gistUrl\": \"z\"}"))))
   (is (nil? (config/unknown-keys "{}"))))
 
 (deftest unknown-keys-of-unparseable-or-non-object-is-nil
-  (is (nil? (config/unknown-keys "{\"coreScheduleUrl\": not closed")))
+  (is (nil? (config/unknown-keys "{\"gistUrl\": not closed")))
   (is (nil? (config/unknown-keys "[\"x\"]")))
   (is (nil? (config/unknown-keys nil))))
