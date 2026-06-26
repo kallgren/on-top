@@ -148,7 +148,7 @@
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today :cursor rare}))))
+                ($ rare/view {:today today :cursor rare :notes notes}))))
        ($ pane-dots {:active active :on-select scroll-to}))))
 
 ;; ── Desktop drawer ───────────────────────────────────────────────────────────

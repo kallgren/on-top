@@ -7,6 +7,7 @@
             [app.date-utils :refer [iso-date]]
             [app.shared.store :as store]
             [app.storage :as storage]
+            [app.notes :as notes]
             [app.core.tasks :as tasks]))
 
 ;; ── Coverage ─────────────────────────────────────────────────────────────────
@@ -23,7 +24,7 @@
 
 (defn select [{:keys [completions]} schedule notes today category-keys]
   (let [today-key (iso-date today)]
-    (for [{:keys [id] :as task} (tasks/enrich notes (tasks/tasks-for schedule today category-keys))]
+    (for [{:keys [id] :as task} (notes/enrich notes (tasks/tasks-for schedule today category-keys))]
       (assoc task :done? (boolean (covered? completions id today-key))))))
 
 ;; ── Wiring ───────────────────────────────────────────────────────────────────

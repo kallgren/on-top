@@ -166,9 +166,9 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today cursor]}]
+(defui view [{:keys [today cursor notes]}]
   (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
-        [by-category toggle] (store/use-store today schedule)
+        [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         cards          (cards/build-cards by-category categories expanded)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)

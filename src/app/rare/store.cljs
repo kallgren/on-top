@@ -4,14 +4,16 @@
    that dispatches the generic toggled event with the row's precomputed
    set-done-through. See app.rare.schedule for the placement model."
   (:require [uix.core :refer [defhook use-state]]
+            [app.notes :as notes]
             [app.rare.schedule :as schedule]
             [app.shared.store :as store]
             [app.storage :as storage]))
 
 ;; ── Projection ───────────────────────────────────────────────────────────────
 
-(defn select [{:keys [completions]} schedule today]
-  (group-by :category (schedule/derive-schedule schedule completions today)))
+(defn select [{:keys [completions]} schedule notes today]
+  (group-by :category
+            (notes/enrich notes (schedule/derive-schedule schedule completions today))))
 
 ;; ── Toggle ───────────────────────────────────────────────────────────────────
 
@@ -31,10 +33,10 @@
   (storage/write-completions! completions-key completions)
   (storage/write-outbox! outbox-key outbox))
 
-(defhook use-store [today schedule]
+(defhook use-store [today schedule notes]
   (let [[store] (use-state #(store/create (read-initial)))
         snapshot (store/use-subscribe store)]
     (store/use-sync! store snapshot
                      {:persist! persist! :creds store/creds :surface "rare"} today)
-    [(select snapshot schedule today)
+    [(select snapshot schedule notes today)
      (fn [row] (swap! store toggle row))]))

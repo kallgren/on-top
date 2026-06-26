@@ -106,6 +106,21 @@
   {:initial (resolve-notes (some-> cached parse not-empty) seed)
    :url     (not-empty config-url)})
 
+;; ── Enrichment ───────────────────────────────────────────────────────────────
+
+(defn name-for
+  "The display name for a task id: the Notes lookup's name, or the id itself when
+   the id has no definition (the id-fallback rule, applied in one place)."
+  [notes id]
+  (get-in notes [id :name] id))
+
+(defn enrich
+  "Join display names from the Notes lookup onto id-only tasks (or rows) by id."
+  [notes tasks]
+  (map #(assoc % :name (name-for notes (:id %))) tasks))
+
+;; ── Fetch ─────────────────────────────────────────────────────────────────────
+
 (defn fetch-notes! [url on-ok]
   (-> (js/fetch url)
       (.then (fn [res]

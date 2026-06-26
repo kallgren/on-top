@@ -106,6 +106,30 @@
                      (is (= {"id" {:name "a `b`"}} (notes/parse "# a `b` `id`\n")))))]
     (is (empty? warnings))))
 
+;; ── Enrichment ───────────────────────────────────────────────────────────────
+
+(deftest name-for-looks-up-a-known-id
+  (is (= "Gmail inbox" (notes/name-for {"gmail" {:name "Gmail inbox"}} "gmail"))))
+
+(deftest name-for-falls-back-to-the-id-for-an-unknown-id
+  (is (= "gmail" (notes/name-for {} "gmail")))
+  (is (= "gmail" (notes/name-for {"other" {:name "Other"}} "gmail"))))
+
+(deftest enrich-joins-names-onto-id-only-tasks
+  (is (= [{:category :digital :id "gmail" :name "Gmail inbox"}
+          {:category :digital :id "unknown" :name "unknown"}]
+         (notes/enrich {"gmail" {:name "Gmail inbox"}}
+                       [{:category :digital :id "gmail"}
+                        {:category :digital :id "unknown"}]))))
+
+(deftest enrich-gives-a-core-and-rare-task-sharing-one-id-the-same-name
+  ;; One definition, two surfaces' rows keyed by the same id → one name and note.
+  (let [notes-lookup {"vacuum" {:name "Vacuum" :note "Under the bed too"}}
+        [core-task]  (notes/enrich notes-lookup [{:category :digital :id "vacuum"}])
+        [rare-row]   (notes/enrich notes-lookup [{:category :household :id "vacuum" :freq "monthly"}])]
+    (is (= "Vacuum" (:name core-task) (:name rare-row)))
+    (is (= "Under the bed too" (get-in notes-lookup ["vacuum" :note])))))
+
 ;; ── Resolution (mirrors schedule-source) ─────────────────────────────────────
 
 (deftest notes-source-paints-cached-markdown-over-the-seed-floor
