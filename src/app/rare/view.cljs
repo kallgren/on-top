@@ -61,7 +61,7 @@
 ;; row. Visibility is the CSS hover of the wrapper OR the row's pin — the popover
 ;; lives inside the hover wrapper (the bridge), so the pointer can travel from the
 ;; ⓘ onto the text to select it without dismissing.
-(defui note-indicator [{:keys [note pinned? on-toggle-pin]}]
+(defui note-indicator [{:keys [note pinned? on-toggle-pin on-start]}]
   ($ :div {:class "group/note relative flex items-center"
            :on-click #(.stopPropagation %)}
      ($ :button
@@ -79,9 +79,16 @@
                           (if pinned? "block" "hidden group-hover/note:block"))}
         ($ :div {:class (str "w-64 max-w-[70vw] rounded-lg border-2 border-edge bg-surface p-3 shadow-lg "
                              "whitespace-pre-wrap text-[13px] leading-snug text-label")}
-           note))))
+           note
+           ($ :button
+              {:type "button"
+               :on-click on-start
+               :class (str "mt-3 flex w-full items-center justify-center rounded-full border-2 border-edge "
+                           "bg-page px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] "
+                           "text-heading cursor-pointer select-none hover:bg-surface-hover")}
+              "Start")))))
 
-(defui task-row [{:keys [row on-toggle at-cursor? pinned? on-pin]}]
+(defui task-row [{:keys [row on-toggle at-cursor? pinned? on-pin on-focus]}]
   (let [{:keys [id name note freq display-iso due-label done? missed]} row
         due                due-label
         {:keys [rel full today-or-yesterday?]} (date-display display-iso)]
@@ -115,12 +122,13 @@
        (when note
          ($ note-indicator {:note note
                             :pinned? pinned?
-                            :on-toggle-pin #(on-pin (fn [cur] (when-not (= cur id) id)))}))
+                            :on-toggle-pin #(on-pin (fn [cur] (when-not (= cur id) id)))
+                            :on-start #(on-focus {:name name :note note})}))
        (when (or done? (not today-or-yesterday?))
          ($ :span {:class "text-[13px] font-semibold tabular-nums text-muted"} full))
        ($ freq-badge {:freq freq}))))
 
-(defui task-list [{:keys [tasks on-toggle class cursor-key open-note on-pin]}]
+(defui task-list [{:keys [tasks on-toggle class cursor-key open-note on-pin on-focus]}]
   ($ :div {:class (str "flex flex-col" (when class (str " " class)))}
      (for [t tasks]
        ($ task-row {:key        (:key t)
@@ -128,7 +136,8 @@
                     :on-toggle  on-toggle
                     :at-cursor? (= (:key t) cursor-key)
                     :pinned?    (= (:id t) open-note)
-                    :on-pin     on-pin}))))
+                    :on-pin     on-pin
+                    :on-focus   on-focus}))))
 
 (defui reveal-divider [{:keys [label on-click]}]
   ($ :div {:class "group/rev mx-4 my-1 flex items-center gap-3 cursor-pointer"
@@ -158,21 +167,21 @@
         ($ :path {:d (if up? "M1.5 7l3.5-4 3.5 4" "M1.5 3l3.5 4 3.5-4")}))))
 
 (defui revealed-section
-  [{:keys [label tasks on-toggle on-collapse above? cursor-key open-note on-pin]}]
+  [{:keys [label tasks on-toggle on-collapse above? cursor-key open-note on-pin on-focus]}]
   (let [divider ($ reveal-divider {:label label :on-click on-collapse})
         items   ($ task-list {:tasks tasks :on-toggle on-toggle :cursor-key cursor-key
-                              :open-note open-note :on-pin on-pin
+                              :open-note open-note :on-pin on-pin :on-focus on-focus
                               :class (str "opacity-50 " (if above? "pt-1" "pb-1"))})]
     (if above?
       ($ :<> items divider)
       ($ :<> divider items))))
 
 (defui fold
-  [{:keys [label tasks on-toggle expanded? on-fold top? cursor-key open-note on-pin]}]
+  [{:keys [label tasks on-toggle expanded? on-fold top? cursor-key open-note on-pin on-focus]}]
   (if expanded?
     ($ revealed-section {:label label :tasks tasks :on-toggle on-toggle
                          :on-collapse on-fold :above? top? :cursor-key cursor-key
-                         :open-note open-note :on-pin on-pin})
+                         :open-note open-note :on-pin on-pin :on-focus on-focus})
     ($ :div {:class (str "group/tab absolute inset-x-0 z-10 h-8 flex items-center justify-center "
                          (if top? "top-0 -translate-y-[80%]" "bottom-0 translate-y-[80%]"))}
        ($ reveal-pill {:label label :up? top? :on-click on-fold
@@ -180,7 +189,7 @@
                                    "group-hover/tab:opacity-100 group-hover/tab:pointer-events-auto")}))))
 
 (defui category-card
-  [{:keys [label completed current upcoming on-toggle cursor-key open-note on-pin
+  [{:keys [label completed current upcoming on-toggle cursor-key open-note on-pin on-focus
            show-completed? show-upcoming? on-toggle-completed on-toggle-upcoming]}]
   ($ :div {:class "rounded-2xl border-2 border-edge bg-surface p-2"}
      ($ card-header {:label label})
@@ -188,20 +197,20 @@
         (when (seq completed)
           ($ fold {:label "Completed" :tasks completed :on-toggle on-toggle
                    :expanded? show-completed? :on-fold on-toggle-completed :top? true
-                   :cursor-key cursor-key :open-note open-note :on-pin on-pin}))
+                   :cursor-key cursor-key :open-note open-note :on-pin on-pin :on-focus on-focus}))
         (if (empty? current)
           ($ :p {:class "py-4 text-center text-[15px] font-medium italic text-muted"}
              "All clear!")
           ($ task-list {:tasks current :on-toggle on-toggle :cursor-key cursor-key
-                        :open-note open-note :on-pin on-pin}))
+                        :open-note open-note :on-pin on-pin :on-focus on-focus}))
         (when (seq upcoming)
           ($ fold {:label "Upcoming" :tasks upcoming :on-toggle on-toggle
                    :expanded? show-upcoming? :on-fold on-toggle-upcoming :top? false
-                   :cursor-key cursor-key :open-note open-note :on-pin on-pin})))))
+                   :cursor-key cursor-key :open-note open-note :on-pin on-pin :on-focus on-focus})))))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today cursor notes]}]
+(defui view [{:keys [today cursor notes on-focus]}]
   (let [schedule       (sched/use-schedule :rare-schedule-url schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
@@ -217,6 +226,6 @@
                            :show-completed? show-completed? :show-upcoming? show-upcoming?
                            :on-toggle toggle
                            :cursor-key cursor-key
-                           :open-note open-note :on-pin set-open-note!
+                           :open-note open-note :on-pin set-open-note! :on-focus on-focus
                            :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
                            :on-toggle-upcoming  #(set-expanded! (fn [m] (update-in m [cat :upcoming?] not)))})))))

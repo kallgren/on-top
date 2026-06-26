@@ -134,7 +134,7 @@
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide? notes schedule]}]
+(defui surfaces [{:keys [today wide? notes schedule on-focus]}]
   (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
         {:keys [rare-hidden? core rare]} (use-pane-cursor)]
     ($ :<>
@@ -149,7 +149,7 @@
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when rare-hidden? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today :cursor rare :notes notes}))))
+                ($ rare/view {:today today :cursor rare :notes notes :on-focus on-focus}))))
        ($ pane-dots {:active active :on-select scroll-to}))))
 
 ;; ── Desktop drawer ───────────────────────────────────────────────────────────
@@ -177,11 +177,12 @@
         schedule (sched/use-schedule :core-schedule-url core/schedule-cache-key core/seed-schedule)
         focus-notes (tasks/todays-notes schedule today core/category-keys notes)
         {:keys [running? items start! stop!]} (use-timer)
-        go! #(start! focus-notes)]
+        go! #(start! focus-notes)
+        focus-task! #(start! [%])]
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide? :notes notes :schedule schedule})
+       ($ surfaces {:today today :wide? wide? :notes notes :schedule schedule :on-focus focus-task!})
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
        ($ help/view)
        (when wide? ($ day-drawer {:today today})))))
