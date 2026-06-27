@@ -1,6 +1,8 @@
 ;; On Top — the Rare maintenance schedule.
 ;;
-;; Keyed by category (:digital / :household), then by Interval label string
+;; Keyed by category — whichever top-level keys you use, rendered in file order
+;; (keep to 8 or fewer; past that EDN map order is not preserved). Multi-word
+;; keys use dashes (:home-office → "Home Office"). Then by Interval label string
 ;; ("monthly", "2 weeks", …), then a vector of tasks. Each task is
 ;; {:id :anchor} with an optional :before lead time in days.
 ;; :id is the stable identity done-through history hangs off; :anchor is the

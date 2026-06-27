@@ -3,6 +3,7 @@
             [app.core.store :as store]
             [app.cursor :as cursor]
             [app.date-utils :as dates]
+            [app.schedule :as schedule]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
 
@@ -11,12 +12,6 @@
 (def seed-schedule (reader/read-string (rc/inline "app/core/seed.edn")))
 
 (def schedule-cache-key "on-top/core-schedule-cache")
-
-(def categories
-  [[:digital   "Digital"]
-   [:household "Household"]])
-
-(def category-keys (map first categories))
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
@@ -54,7 +49,7 @@
   ($ :p {:class "py-20 text-center text-[17px] font-medium italic text-muted tracking-wide text-inset"}
      "You're on top :)"))
 
-(defui task-list [{:keys [by-category toggle cursor-id]}]
+(defui task-list [{:keys [categories by-category toggle cursor-id]}]
   (for [[cat label] categories
         :let [ts (by-category cat)]
         :when (seq ts)]
@@ -89,7 +84,8 @@
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
 (defui day-view [{:keys [today schedule notes cursor]}]
-  (let [[tasks toggle] (store/use-store today schedule notes category-keys)
+  (let [categories (schedule/schedule->categories schedule)
+        [tasks toggle] (store/use-store today schedule notes (map first categories))
         focused (cursor/use-list-cursor tasks #(toggle (:id %)) cursor)
         cursor-id (:id focused)
         content-ref (use-ref)
@@ -99,7 +95,8 @@
        ($ :div {:ref content-ref :class "flex w-full flex-col gap-4 px-1 py-2"}
           (if (empty? by-category)
             ($ empty-state)
-            ($ task-list {:by-category by-category :toggle toggle :cursor-id cursor-id})))
+            ($ task-list {:categories categories :by-category by-category
+                          :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))
 
 (defui view [{:keys [today cursor notes schedule]}]

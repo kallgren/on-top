@@ -51,3 +51,28 @@
 (deftest schedule-source-has-no-url-when-the-surface-gist-is-unconfigured
   (is (nil? (:url (schedule/schedule-source {:config-url nil :cached nil :seed {}}))))
   (is (nil? (:url (schedule/schedule-source {:config-url "" :cached nil :seed {}})))))
+
+(deftest schedule->categories-derives-pairs-from-core-shape-keys
+  (is (= [[:digital "Digital"] [:household "Household"]]
+         (schedule/schedule->categories
+          (array-map :digital   {:week-odd {:monday ["gmail"]}}
+                     :household {:week-odd {:monday ["bathroom"]}})))))
+
+(deftest schedule->categories-derives-pairs-from-rare-shape-keys
+  (is (= [[:digital "Digital"] [:household "Household"]]
+         (schedule/schedule->categories
+          (array-map :digital   {"monthly" [{:id "review-subs" :anchor "Jun 6"}]}
+                     :household {"2 weeks" [{:id "change-bed-linen" :anchor "Jun 13"}]})))))
+
+(deftest schedule->categories-title-cases-dashed-keys-word-by-word
+  (is (= [[:home-office "Home Office"]]
+         (schedule/schedule->categories (array-map :home-office {})))))
+
+(deftest schedule->categories-preserves-file-order
+  (is (= [:household :digital :errands]
+         (map first
+              (schedule/schedule->categories
+               (array-map :household {} :digital {} :errands {}))))))
+
+(deftest schedule->categories-of-an-empty-schedule-is-empty
+  (is (= [] (schedule/schedule->categories {}))))

@@ -1,7 +1,21 @@
 (ns app.schedule
   "Runtime resolution of the Schedule: a remote gist override over the
    compiled-in seed schedule. See docs/adr/0005."
-  (:require [cljs.reader :as reader]))
+  (:require [cljs.reader :as reader]
+            [clojure.string :as str]))
+
+(defn- title-case [kw]
+  (->> (str/split (name kw) #"-")
+       (map str/capitalize)
+       (str/join " ")))
+
+(defn schedule->categories
+  "A Schedule's Categories: ordered [key label] pairs from its top-level keys, in
+   file order, each label title-cased from the key (:home-office → \"Home
+   Office\"). The single source of truth for both surfaces; callers needing only
+   keys take the firsts. See docs/adr/0012."
+  [schedule]
+  (mapv (fn [k] [k (title-case k)]) (keys schedule)))
 
 (defn parse-schedule [s]
   (try

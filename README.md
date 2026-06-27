@@ -48,6 +48,8 @@ Unknown keys are ignored (and logged). Seeding is one-time per device; there's n
 
 Each surface ships with its own seed schedule (`src/app/core/seed.edn`, `src/app/rare/seed.edn`, and `src/app/day/seed.edn`). You can override them at runtime — without redeploying — by pointing `gistUrl` at a single [GitHub gist](https://gist.github.com) holding the override files under fixed names: `core.edn`, `rare.edn`, and `day.edn` (plus `notes.md`, see [Notes file](#notes-file)). Each is EDN of the same shape as that surface's seed and is optional — a name that isn't present just leaves that surface on its seed. Core and Rare are maps of categorised tasks; Day is a flat, ordered vector of time blocks (`{:id "..." :name "..." :start "HH:MM" :end "HH:MM"}`, with `:open? true` marking free time) — match the shape of the surface's seed.
 
+In Core and Rare, the map's top-level keys **are** the categories — name and order them however you like (each surface derives its own from its own file). A key becomes a heading title-cased from its name: `:digital` shows as "Digital", and a multi-word key written with dashes, `:home-office`, shows as "Home Office". Keys render in the order you write them, and a category with no tasks due simply doesn't render.
+
 1. Create one gist and add only the files you want to override, each under its expected name (`core.edn`, `rare.edn`, `day.edn`, `notes.md`). Any name you leave out stays on its seed — the files are independent.
 2. Store the gist's URL as `gistUrl` in `on-top/config` (see [Configuration](#configuration)). Either form works — the gist page URL or a file's raw URL — the app reduces it to each file's **raw-latest** link (the commit hash removed, so it always serves the newest revision):
    ```

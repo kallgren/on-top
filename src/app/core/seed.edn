@@ -1,6 +1,8 @@
 ;; On Top — the Core routine schedule.
 ;;
-;; Two-week cycle keyed by category (:digital / :household), then by ISO
+;; Two-week cycle keyed by category — whichever top-level keys you use, rendered
+;; in file order (keep to 8 or fewer; past that EDN map order is not preserved).
+;; Multi-word keys use dashes (:home-office → "Home Office"). Then by ISO
 ;; week-number parity (:week-odd / :week-even), then by weekday.
 ;; Each task is a bare id string: the stable identity that done-through history
 ;; hangs off. Display names live in the Notes file (src/app/seed-notes.md), keyed

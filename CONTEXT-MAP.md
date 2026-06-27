@@ -82,9 +82,10 @@ globally unique across all surfaces. Distinct from the **name**, which may chang
 _Avoid_: key, slug; name
 
 **Category**:
-The kind of a task on **Core** and **Rare**. Exactly two exist: `:digital` and
-`:household`. Fixed, not user-configurable. The same two on both those surfaces;
-**Day** has no categories — it orders by time of day instead.
+The kind of a task on **Core** and **Rare**: the top-level keys of that surface's
+**Schedule**, in file order, each surface deriving its own. Its label is
+title-cased from the key (`:home-office` → "Home Office"). **Day** has none — it
+orders by time of day.
 _Avoid_: section, group, type
 
 **Schedule**:
