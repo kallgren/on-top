@@ -30,7 +30,8 @@
      ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note)))
 
 (defui note-sheet [{:keys [items]}]
-  ($ :div {:class "max-h-[40vh] overflow-y-auto border-b border-edge bg-surface px-7 pt-4 pb-5"}
+  ($ :div {:class (str "w-full max-w-md wide:max-w-3xl max-h-[40vh] overflow-y-auto "
+                       "rounded-2xl border-2 border-edge bg-surface shadow-lg px-7 pt-4 pb-5")}
      (for [{:keys [name note]} items]
        ($ note-block {:key name :name name :note note}))))
 
@@ -39,12 +40,14 @@
 (defui timer [{:keys [running? items on-go on-stop]}]
   (let [[end-at set-end-at] (use-state nil)
         [left set-left]     (use-state timer-secs)
+        [notes-open? set-notes-open!] (use-state true)
         done? (and running? (zero? left))]
     (use-effect
      (fn []
        (if running?
          (do (set-left timer-secs)
-             (set-end-at (+ (js/Date.now) (* timer-secs 1000))))
+             (set-end-at (+ (js/Date.now) (* timer-secs 1000)))
+             (set-notes-open! true))
          (set-end-at nil))
        js/undefined)
      [running?])
@@ -63,24 +66,39 @@
        js/undefined)
      [end-at left])
     (if running?
-      ($ :div {:role "timer"
-               :class (str "fixed inset-x-0 bottom-0 z-20 flex flex-col border-t-2 "
-                           (if done? "border-done" "border-edge"))}
-         (when (seq items)
+      ($ :div {:class (str "fixed inset-x-0 bottom-0 z-20 flex flex-col items-center gap-3 "
+                           "px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]")}
+         (when (and (seq items) notes-open?)
            ($ note-sheet {:items items}))
-         ($ :div {:class (str "flex items-center justify-between gap-4 "
-                              "px-7 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] "
-                              (if done? "bg-done" "bg-surface"))}
-            ($ :span {:class (if done?
-                               "text-[19px] font-bold uppercase tracking-[0.2em] text-white"
-                               "text-[34px] font-bold tabular-nums tracking-wide text-label")}
-               (if done? "Time's up" (mmss left)))
-            ($ :button {:on-click on-stop
-                        :aria-label "Close timer"
-                        :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
-                                    "text-[22px] leading-none transition-colors "
-                                    (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
-               "✕")))
+         ($ :div {:role "timer"
+                  :class (str "w-full max-w-md wide:max-w-3xl overflow-hidden rounded-2xl border-2 shadow-lg "
+                              (if done? "border-done" "border-edge"))}
+            ($ :div {:class (str "flex items-center justify-between gap-4 "
+                                 "px-7 pt-4 pb-4 "
+                                 (if done? "bg-done" "bg-surface"))}
+               ($ :span {:class (if done?
+                                  "text-[19px] font-bold uppercase tracking-[0.2em] text-white"
+                                  "text-[34px] font-bold tabular-nums tracking-wide text-label")}
+                  (if done? "Time's up" (mmss left)))
+               ($ :div {:class "flex items-center gap-1"}
+                  (when (seq items)
+                    ($ :button {:on-click #(set-notes-open! (not notes-open?))
+                                :aria-expanded notes-open?
+                                :aria-label (if notes-open? "Hide notes" "Show notes")
+                                :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
+                                            "transition-colors "
+                                            (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
+                       ($ :svg {:viewBox "0 0 24 24"
+                                :class (str "h-[20px] w-[20px] transition-transform " (when-not notes-open? "rotate-180"))
+                                :fill "none" :stroke "currentColor" :stroke-width 2
+                                :stroke-linecap "round" :stroke-linejoin "round"}
+                          ($ :path {:d "M6 9l6 6 6-6"}))))
+                  ($ :button {:on-click on-stop
+                              :aria-label "Close timer"
+                              :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
+                                          "text-[22px] leading-none transition-colors "
+                                          (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
+                     "✕")))))
       ($ :button {:on-click on-go
                   :aria-label "Start 30-minute timer"
                   :class (str "fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] right-7 z-20 "
