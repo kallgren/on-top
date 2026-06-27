@@ -23,6 +23,7 @@
    :wednesday ["photo-inbox" "screenshots"]
    :thursday  ["gmail"]
    :friday    ["tabs"]
+   :saturday  ["gmail" "downloads"]
    :sunday    ["calendar" "waiting"]}}
 
  :household
@@ -33,4 +34,5 @@
 
   :week-even
   {:wednesday ["vacuum"]
+   :saturday  ["vacuum"]
    :sunday    ["towels"]}}}
