@@ -9,6 +9,7 @@
             [app.help :as help]
             [app.keybinding :as keybinding]
             [app.keymap :as keymap]
+            [app.layout :as layout]
             [app.notes :as notes]
             [app.rare.view :as rare]
             [app.schedule :as schedule]
@@ -121,11 +122,12 @@
 
 (defhook use-pane-cursor
   "Owns crossing the one keyboard Cursor between Panes and the `r` toggle (see
-   ADR-0011). Returns `{:rare-hidden? :core :rare}`, where `:core`/`:rare` are
-   opaque `use-list-cursor` opts bundles each Surface forwards untouched."
-  []
-  (let [[rare-hidden? set-rare-hidden!] (use-state false)
-        [cursor-pane set-cursor-pane!] (use-state :core)
+   ADR-0011). Borrows Rare's open state from the Layout via `rare-open?`/`set-rare!`
+   so toggling Rare keeps the Cursor in step. Returns `{:toggle-rare :core :rare}`,
+   where `:core`/`:rare` are opaque `use-list-cursor` opts bundles each Surface
+   forwards untouched."
+  [rare-open? set-rare!]
+  (let [[cursor-pane set-cursor-pane!] (use-state :core)
         [reset-nonce set-reset-nonce!] (use-state 0)
         dismiss (use-callback
                  (fn []
@@ -134,50 +136,38 @@
                  [])
         toggle-rare (use-callback
                      (fn []
-                       (let [hiding? (not rare-hidden?)]
-                         (set-rare-hidden! hiding?)
-                         (when (and hiding? (= cursor-pane :rare))
+                       (let [opening? (not rare-open?)]
+                         (set-rare! opening?)
+                         (when (and (not opening?) (= cursor-pane :rare))
                            (dismiss))))
-                     [rare-hidden? cursor-pane dismiss])]
+                     [rare-open? set-rare! cursor-pane dismiss])]
     (keybinding/use-hotkey (keymap/key-of :toggle-rare) toggle-rare)
-    {:rare-hidden? rare-hidden?
-     :toggle-rare toggle-rare
+    {:toggle-rare toggle-rare
      :core {:active? (= cursor-pane :core)
             :on-dismiss dismiss
             :reset-nonce reset-nonce
             :on-exit-right (fn []
-                             (set-rare-hidden! false)
+                             (set-rare! true)
                              (set-cursor-pane! :rare))}
      :rare {:active? (= cursor-pane :rare)
             :on-dismiss dismiss
             :reset-nonce reset-nonce
             :on-exit-left #(set-cursor-pane! :core)}}))
 
-;; ── Day toggle ───────────────────────────────────────────────────────────────
-
-(defhook use-day-hidden
-  "Owns the `d` toggle that swaps Day between its open Pane and the collapsed
-   left-edge drawer (wide only; no Cursor). Starts collapsed. Returns
-   `{:hidden? :toggle}` so the corner button can drive the same toggle."
-  []
-  (let [[hidden? set-hidden!] (use-state true)
-        toggle (use-callback #(set-hidden! not) [])]
-    (keybinding/use-hotkey (keymap/key-of :toggle-day) toggle)
-    {:hidden? hidden? :toggle toggle}))
-
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide? day-hidden? toggle-day notes schedule]}]
-  (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
-        {:keys [rare-hidden? toggle-rare core rare]} (use-pane-cursor)]
+(defui surfaces [{:keys [today wide? layout notes schedule]}]
+  (let [{:keys [day-open? rare-open? toggle-day set-rare!]} layout
+        {:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
+        {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare!)]
     ($ :<>
        ($ corner-toggle {:side :left
-                         :open? (not day-hidden?)
+                         :open? day-open?
                          :on-click toggle-day
                          :label "Show or hide the Day pane"
                          :class "left-7"})
        ($ corner-toggle {:side :right
-                         :open? (not rare-hidden?)
+                         :open? rare-open?
                          :on-click toggle-rare
                          :label "Show or hide the Rare pane"
                          :class "right-7"})
@@ -185,13 +175,13 @@
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[360px]"
-                                   (when day-hidden? " wide:hidden"))}
-             (when-not (and wide? day-hidden?) ($ day/view {:today today})))
+                                   (when-not day-open? " wide:hidden"))}
+             (when-not (and wide? (not day-open?)) ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today :cursor core :notes notes :schedule schedule})))
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
-                                   (when rare-hidden? " wide:hidden"))}
+                                   (when-not rare-open? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
                 ($ rare/view {:today today :cursor rare :notes notes}))))
        ($ pane-dots {:active active :on-select scroll-to}))))
@@ -217,7 +207,7 @@
 (defui app []
   (let [today (use-today)
         wide? (use-wide?)
-        {day-hidden? :hidden? toggle-day :toggle} (use-day-hidden)
+        layout (layout/use-layout)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
         focus-notes (tasks/todays-notes schedule today
@@ -227,10 +217,10 @@
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide? :day-hidden? day-hidden? :toggle-day toggle-day :notes notes :schedule schedule})
+       ($ surfaces {:today today :wide? wide? :layout layout :notes notes :schedule schedule})
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
        ($ help/view)
-       (when (and wide? day-hidden?) ($ day-drawer {:today today})))))
+       (when (and wide? (not (:day-open? layout))) ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 
