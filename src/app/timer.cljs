@@ -105,6 +105,9 @@
                   :class (str "fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] right-7 z-20 "
                               "flex h-16 w-16 items-center justify-center rounded-full "
                               "border-2 border-edge bg-surface text-muted "
-                              "text-[22px] font-bold tracking-wide "
-                              "cursor-pointer shadow-lg transition hover:bg-surface-hover active:scale-95")}
-         "Go"))))
+                              "cursor-pointer shadow-lg transition hover:bg-surface-hover hover:text-label active:scale-95")}
+         ($ :svg {:viewBox "0 0 24 24" :class "h-7 w-7" :fill "none" :stroke "currentColor"
+                  :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"}
+            ($ :line {:x1 10 :y1 2 :x2 14 :y2 2})
+            ($ :line {:x1 12 :y1 14 :x2 15 :y2 11})
+            ($ :circle {:cx 12 :cy 14 :r 8}))))))
