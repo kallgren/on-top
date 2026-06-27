@@ -8,6 +8,7 @@
             [app.modal :as modal]
             [app.rare.cards :as cards]
             [app.rare.store :as store]
+            [app.schedule :as schedule]
             [app.shared.schedule :as sched]
             [cljs.reader :as reader]
             [shadow.resource :as rc]))
@@ -17,10 +18,6 @@
 (def seed-schedule (reader/read-string (rc/inline "app/rare/seed.edn")))
 
 (def schedule-cache-key "on-top/rare-schedule-cache")
-
-(def categories
-  [[:digital   "Digital"]
-   [:household "Household"]])
 
 ;; ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -208,6 +205,7 @@
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         [details set-details!] (use-state nil)
+        categories     (schedule/schedule->categories schedule)
         cards          (cards/build-cards by-category categories expanded)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
         cursor-key     (:key focused)]

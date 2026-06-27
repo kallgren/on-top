@@ -10,6 +10,7 @@
             [app.keymap :as keymap]
             [app.notes :as notes]
             [app.rare.view :as rare]
+            [app.schedule :as schedule]
             [app.shared.notes :as shared-notes]
             [app.shared.schedule :as sched]
             [app.shared.today :refer [use-today]]
@@ -175,7 +176,8 @@
         wide? (use-wide?)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
-        focus-notes (tasks/todays-notes schedule today core/category-keys notes)
+        focus-notes (tasks/todays-notes schedule today
+                                        (map first (schedule/schedule->categories schedule)) notes)
         {:keys [running? items start! stop!]} (use-timer)
         go! #(start! focus-notes)]
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
