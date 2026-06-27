@@ -133,17 +133,28 @@
             :reset-nonce reset-nonce
             :on-exit-left #(set-cursor-pane! :core)}}))
 
+;; ── Day toggle ───────────────────────────────────────────────────────────────
+
+(defhook use-day-hidden
+  "Owns the `d` toggle that swaps Day between its open Pane and the collapsed
+   left-edge drawer (wide only; no Cursor). Starts collapsed."
+  []
+  (let [[hidden? set-hidden!] (use-state true)]
+    (keybinding/use-hotkey (keymap/key-of :toggle-day) #(set-hidden! not))
+    hidden?))
+
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide? notes schedule]}]
+(defui surfaces [{:keys [today wide? day-hidden? notes schedule]}]
   (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
         {:keys [rare-hidden? core rare]} (use-pane-cursor)]
     ($ :<>
        ($ :div {:ref ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
-          ($ :section {:class "w-full shrink-0 snap-center wide:hidden"}
-             (when-not wide? ($ day/view {:today today})))
+          ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[360px]"
+                                   (when day-hidden? " wide:hidden"))}
+             (when-not (and wide? day-hidden?) ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today :cursor core :notes notes :schedule schedule})))
@@ -174,6 +185,7 @@
 (defui app []
   (let [today (use-today)
         wide? (use-wide?)
+        day-hidden? (use-day-hidden)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
         focus-notes (tasks/todays-notes schedule today
@@ -183,10 +195,10 @@
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide? :notes notes :schedule schedule})
+       ($ surfaces {:today today :wide? wide? :day-hidden? day-hidden? :notes notes :schedule schedule})
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
        ($ help/view)
-       (when wide? ($ day-drawer {:today today})))))
+       (when (and wide? day-hidden?) ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 

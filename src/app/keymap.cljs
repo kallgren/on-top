@@ -18,6 +18,7 @@
    {:id :cross-right  :key "l" :group :navigation :desc "Cross to the pane on the right"}
    {:id :toggle-task  :key "e" :group :actions :desc "Toggle the task under the cursor"}
    {:id :toggle-rare  :key "r" :group :actions :desc "Show or hide the Rare pane"}
+   {:id :toggle-day   :key "d" :group :actions :desc "Show or hide the Day pane"}
    {:id :toggle-timer :key "g" :group :actions :desc "Start or stop the timer"}
    {:id :open-details :key "Enter" :cap "↵" :group :actions :desc "Open details for the task under the cursor"}
    {:id :dismiss      :key "Escape" :cap "Esc" :group :general :desc "Dismiss the cursor"}
