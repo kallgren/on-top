@@ -2,12 +2,14 @@
   (:require [uix.core :refer [defui defhook $ use-state use-ref use-effect use-layout-effect use-callback]]
             [uix.dom]
             [app.config :as config]
+            [app.controls :as controls]
             [app.core.tasks :as tasks]
             [app.core.view :as core]
             [app.day.view :as day]
             [app.help :as help]
             [app.keybinding :as keybinding]
             [app.keymap :as keymap]
+            [app.layout :as layout]
             [app.notes :as notes]
             [app.rare.view :as rare]
             [app.schedule :as schedule]
@@ -66,6 +68,23 @@
                    :class (str "h-2.5 w-2.5 rounded-full transition-colors "
                                (if (= i active) "bg-muted" "bg-edge"))}))))
 
+;; ── Corner toggles ───────────────────────────────────────────────────────────
+
+(defui sidebar-icon [{:keys [side]}]
+  (let [x (if (= side :left) 9 15)]
+    ($ :svg {:viewBox "0 0 24 24" :class "h-[18px] w-[18px]" :fill "none"
+             :stroke "currentColor" :stroke-width 2 :stroke-linejoin "round"}
+       ($ :rect {:x 3 :y 4 :width 18 :height 16 :rx 2})
+       ($ :line {:x1 x :y1 4 :x2 x :y2 20}))))
+
+(defui corner-toggle [{:keys [side open? on-click label class]}]
+  ($ controls/corner-button {:on-click on-click
+                             :label label
+                             :active? open?
+                             :aria-pressed open?
+                             :class class}
+     ($ sidebar-icon {:side side})))
+
 ;; ── Pane scroll ──────────────────────────────────────────────────────────────
 
 (defhook use-pane-scroll
@@ -103,30 +122,32 @@
 
 (defhook use-pane-cursor
   "Owns crossing the one keyboard Cursor between Panes and the `r` toggle (see
-   ADR-0011). Returns `{:rare-hidden? :core :rare}`, where `:core`/`:rare` are
-   opaque `use-list-cursor` opts bundles each Surface forwards untouched."
-  []
-  (let [[rare-hidden? set-rare-hidden!] (use-state false)
-        [cursor-pane set-cursor-pane!] (use-state :core)
+   ADR-0011). Borrows Rare's open state from the Layout via `rare-open?`/`set-rare!`
+   so toggling Rare keeps the Cursor in step. Returns `{:toggle-rare :core :rare}`,
+   where `:core`/`:rare` are opaque `use-list-cursor` opts bundles each Surface
+   forwards untouched."
+  [rare-open? set-rare!]
+  (let [[cursor-pane set-cursor-pane!] (use-state :core)
         [reset-nonce set-reset-nonce!] (use-state 0)
         dismiss (use-callback
                  (fn []
                    (set-cursor-pane! :core)
                    (set-reset-nonce! inc))
-                 [])]
-    (keybinding/use-hotkey
-     (keymap/key-of :toggle-rare)
-     (fn []
-       (let [hiding? (not rare-hidden?)]
-         (set-rare-hidden! hiding?)
-         (when (and hiding? (= cursor-pane :rare))
-           (dismiss)))))
-    {:rare-hidden? rare-hidden?
+                 [])
+        toggle-rare (use-callback
+                     (fn []
+                       (let [opening? (not rare-open?)]
+                         (set-rare! opening?)
+                         (when (and (not opening?) (= cursor-pane :rare))
+                           (dismiss))))
+                     [rare-open? set-rare! cursor-pane dismiss])]
+    (keybinding/use-hotkey (keymap/key-of :toggle-rare) toggle-rare)
+    {:toggle-rare toggle-rare
      :core {:active? (= cursor-pane :core)
             :on-dismiss dismiss
             :reset-nonce reset-nonce
             :on-exit-right (fn []
-                             (set-rare-hidden! false)
+                             (set-rare! true)
                              (set-cursor-pane! :rare))}
      :rare {:active? (= cursor-pane :rare)
             :on-dismiss dismiss
@@ -135,20 +156,32 @@
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide? notes schedule]}]
-  (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
-        {:keys [rare-hidden? core rare]} (use-pane-cursor)]
+(defui surfaces [{:keys [today wide? layout notes schedule]}]
+  (let [{:keys [day-open? rare-open? toggle-day set-rare!]} layout
+        {:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
+        {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare!)]
     ($ :<>
+       ($ corner-toggle {:side :left
+                         :open? day-open?
+                         :on-click toggle-day
+                         :label "Show or hide the Day pane"
+                         :class "left-7"})
+       ($ corner-toggle {:side :right
+                         :open? rare-open?
+                         :on-click toggle-rare
+                         :label "Show or hide the Rare pane"
+                         :class "right-7"})
        ($ :div {:ref ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
-          ($ :section {:class "w-full shrink-0 snap-center wide:hidden"}
-             (when-not wide? ($ day/view {:today today})))
+          ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[360px]"
+                                   (when-not day-open? " wide:hidden"))}
+             (when-not (and wide? (not day-open?)) ($ day/view {:today today})))
           ($ :section {:class "w-full shrink-0 snap-center px-8 wide:flex-1 wide:px-7"}
              ($ :div {:class "mx-auto w-full max-w-md"}
                 ($ core/view {:today today :cursor core :notes notes :schedule schedule})))
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
-                                   (when rare-hidden? " wide:hidden"))}
+                                   (when-not rare-open? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
                 ($ rare/view {:today today :cursor rare :notes notes}))))
        ($ pane-dots {:active active :on-select scroll-to}))))
@@ -174,6 +207,7 @@
 (defui app []
   (let [today (use-today)
         wide? (use-wide?)
+        layout (layout/use-layout)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
         focus-notes (tasks/todays-notes schedule today
@@ -183,10 +217,10 @@
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide? :notes notes :schedule schedule})
+       ($ surfaces {:today today :wide? wide? :layout layout :notes notes :schedule schedule})
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
        ($ help/view)
-       (when wide? ($ day-drawer {:today today})))))
+       (when (and wide? (not (:day-open? layout))) ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 
