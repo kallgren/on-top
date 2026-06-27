@@ -2,6 +2,7 @@
   (:require [uix.core :refer [defui defhook $ use-state use-ref use-effect use-layout-effect use-callback]]
             [uix.dom]
             [app.config :as config]
+            [app.controls :as controls]
             [app.core.tasks :as tasks]
             [app.core.view :as core]
             [app.day.view :as day]
@@ -66,6 +67,23 @@
                    :class (str "h-2.5 w-2.5 rounded-full transition-colors "
                                (if (= i active) "bg-muted" "bg-edge"))}))))
 
+;; ── Corner toggles ───────────────────────────────────────────────────────────
+
+(defui sidebar-icon [{:keys [side]}]
+  (let [x (if (= side :left) 9 15)]
+    ($ :svg {:viewBox "0 0 24 24" :class "h-[18px] w-[18px]" :fill "none"
+             :stroke "currentColor" :stroke-width 2 :stroke-linejoin "round"}
+       ($ :rect {:x 3 :y 4 :width 18 :height 16 :rx 2})
+       ($ :line {:x1 x :y1 4 :x2 x :y2 20}))))
+
+(defui corner-toggle [{:keys [side open? on-click label class]}]
+  ($ controls/corner-button {:on-click on-click
+                             :label label
+                             :active? open?
+                             :aria-pressed open?
+                             :class class}
+     ($ sidebar-icon {:side side})))
+
 ;; ── Pane scroll ──────────────────────────────────────────────────────────────
 
 (defhook use-pane-scroll
@@ -113,15 +131,17 @@
                  (fn []
                    (set-cursor-pane! :core)
                    (set-reset-nonce! inc))
-                 [])]
-    (keybinding/use-hotkey
-     (keymap/key-of :toggle-rare)
-     (fn []
-       (let [hiding? (not rare-hidden?)]
-         (set-rare-hidden! hiding?)
-         (when (and hiding? (= cursor-pane :rare))
-           (dismiss)))))
+                 [])
+        toggle-rare (use-callback
+                     (fn []
+                       (let [hiding? (not rare-hidden?)]
+                         (set-rare-hidden! hiding?)
+                         (when (and hiding? (= cursor-pane :rare))
+                           (dismiss))))
+                     [rare-hidden? cursor-pane dismiss])]
+    (keybinding/use-hotkey (keymap/key-of :toggle-rare) toggle-rare)
     {:rare-hidden? rare-hidden?
+     :toggle-rare toggle-rare
      :core {:active? (= cursor-pane :core)
             :on-dismiss dismiss
             :reset-nonce reset-nonce
@@ -137,18 +157,30 @@
 
 (defhook use-day-hidden
   "Owns the `d` toggle that swaps Day between its open Pane and the collapsed
-   left-edge drawer (wide only; no Cursor). Starts collapsed."
+   left-edge drawer (wide only; no Cursor). Starts collapsed. Returns
+   `{:hidden? :toggle}` so the corner button can drive the same toggle."
   []
-  (let [[hidden? set-hidden!] (use-state true)]
-    (keybinding/use-hotkey (keymap/key-of :toggle-day) #(set-hidden! not))
-    hidden?))
+  (let [[hidden? set-hidden!] (use-state true)
+        toggle (use-callback #(set-hidden! not) [])]
+    (keybinding/use-hotkey (keymap/key-of :toggle-day) toggle)
+    {:hidden? hidden? :toggle toggle}))
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide? day-hidden? notes schedule]}]
+(defui surfaces [{:keys [today wide? day-hidden? toggle-day notes schedule]}]
   (let [{:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
-        {:keys [rare-hidden? core rare]} (use-pane-cursor)]
+        {:keys [rare-hidden? toggle-rare core rare]} (use-pane-cursor)]
     ($ :<>
+       ($ corner-toggle {:side :left
+                         :open? (not day-hidden?)
+                         :on-click toggle-day
+                         :label "Show or hide the Day pane"
+                         :class "left-7"})
+       ($ corner-toggle {:side :right
+                         :open? (not rare-hidden?)
+                         :on-click toggle-rare
+                         :label "Show or hide the Rare pane"
+                         :class "right-7"})
        ($ :div {:ref ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
@@ -185,7 +217,7 @@
 (defui app []
   (let [today (use-today)
         wide? (use-wide?)
-        day-hidden? (use-day-hidden)
+        {day-hidden? :hidden? toggle-day :toggle} (use-day-hidden)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
         focus-notes (tasks/todays-notes schedule today
@@ -195,7 +227,7 @@
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide? :day-hidden? day-hidden? :notes notes :schedule schedule})
+       ($ surfaces {:today today :wide? wide? :day-hidden? day-hidden? :toggle-day toggle-day :notes notes :schedule schedule})
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
        ($ help/view)
        (when (and wide? day-hidden?) ($ day-drawer {:today today})))))

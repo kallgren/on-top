@@ -9,6 +9,7 @@
    The shell mounts `view` once and knows nothing else — so the glyph is a
    one-line removal."
   (:require [uix.core :refer [defui $ use-state]]
+            [app.controls :as controls]
             [app.keybinding :refer [use-hotkey]]
             [app.keymap :as keymap]
             [app.modal :as modal]))
@@ -49,12 +50,9 @@
   (let [[open? set-open!] (use-state false)]
     (use-hotkey (keymap/key-of :help) #(set-open! true))
     ($ :<>
-       ($ :button {:on-click #(set-open! true)
-                   :aria-label "Keyboard shortcuts"
-                   :class (str "fixed right-7 top-7 z-20 hidden h-9 w-9 wide:flex "
-                               "items-center justify-center rounded-full "
-                               "border border-edge/60 text-[16px] font-bold leading-none "
-                               "text-muted cursor-pointer transition hover:bg-edge/30")}
-          "?")
+       ($ controls/corner-button {:on-click #(set-open! true)
+                                  :label "Keyboard shortcuts"
+                                  :class "right-[4.5rem]"}
+          ($ :span {:class "text-[16px] font-bold leading-none"} "?"))
        (when open?
          ($ overlay {:on-close #(set-open! false)})))))
