@@ -30,10 +30,11 @@
      ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note)))
 
 (defui note-sheet [{:keys [items]}]
-  ($ :div {:class (str "w-full max-w-md wide:max-w-3xl max-h-[40vh] overflow-y-auto "
-                       "rounded-2xl border-2 border-edge bg-surface shadow-lg px-7 pt-4 pb-5")}
-     (for [{:keys [name note]} items]
-       ($ note-block {:key name :name name :note note}))))
+  ($ :div {:class (str "w-full max-w-md wide:max-w-3xl overflow-hidden "
+                       "rounded-2xl border-2 border-edge bg-surface shadow-lg")}
+     ($ :div {:class "max-h-[40vh] overflow-y-auto overscroll-contain px-7 pt-4 pb-5"}
+        (for [{:keys [name note]} items]
+          ($ note-block {:key name :name name :note note})))))
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
