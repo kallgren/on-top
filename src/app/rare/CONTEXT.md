@@ -8,32 +8,26 @@ states. See [CONTEXT-MAP.md](../../../CONTEXT-MAP.md) for the shared language
 ## Language
 
 **Interval**:
-A Rare **Task**'s recurrence rule: the cadence at which it recurs, drawn from a
-fixed set of strings — `"2 weeks"`, `"monthly"`, `"2 months"`, `"quarterly"`,
-`"6 months"`, `"yearly"`. No arbitrary cadences.
+A Rare **Task**'s recurrence rule: its cadence, drawn from a fixed set — `"2 weeks"`,
+`"monthly"`, `"2 months"`, `"quarterly"`, `"6 months"`, `"yearly"`.
 _Avoid_: frequency, period, recurrence
 
 **Anchor date**:
-The date of the first **Occurrence** of a task. All future occurrences are
-computed by stepping forward from the anchor by the **Interval**. A calendar
-date, not a completion date.
+The date of a task's first **Occurrence**, from which all later ones step forward
+by the **Interval**. A calendar date, not a completion date.
 _Avoid_: start date, seed date
 
 **Current**:
-A **Task** with at least one **Occurrence** later than its **Done-through** and
-on or before today — due but not done. Shown as a single row: the earliest such
-occurrence's date, plus a **Missed** count for any others. The default view shows
-only current tasks.
+A **Task** with an **Occurrence** later than its **Done-through** but on or before
+today — due, not done.
 _Avoid_: active, due, overdue, pending
 
 **Upcoming**:
-A **Task** whose **Done-through** already covers every **Occurrence** on or
-before today — it is caught up. Its row shows the next future occurrence. Hidden
-by default; revealed by the "show upcoming" toggle.
+A **Task** whose **Done-through** covers every **Occurrence** on or before today —
+caught up, with only future occurrences left.
 _Avoid_: future, scheduled, pending
 
 **Missed**:
-The count of due-but-not-done **Occurrence**s beyond the earliest one shown on a
-**Current** task's row, surfaced as "X missed". Lets a backlog collapse into one
-row without hiding that it exists.
+The count of due-but-not-done **Occurrence**s beyond the earliest one on a
+**Current** task's row.
 _Avoid_: overdue, backlog, skipped, behind

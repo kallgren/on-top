@@ -8,8 +8,7 @@ Schedule, Occurrence, Done-through).
 ## Language
 
 **Week parity**:
-Which half of the two-week cycle today falls in, derived from ISO week-number
-parity. The **Schedule**'s two top-level halves are `:week-odd` and `:week-even`;
-a Core task's recurrence rule is its assignment to weekday slots within these
-halves. No parity vocabulary appears inside task data.
+Which half of the two-week cycle today falls in, from ISO week-number parity. The
+**Schedule**'s two halves are `:week-odd` and `:week-even`, and a Core task's
+recurrence rule is its placement into weekday slots within a half.
 _Avoid_: fortnight phase, A/B week, biweekly index
