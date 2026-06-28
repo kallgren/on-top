@@ -12,7 +12,7 @@
   --color-done: #2e7d32;          /* whole button when checked */
   --color-label: #36322a;         /* task label */
   --color-heading: #9b8f73;       /* category headings */
-  --color-muted: #9a917b;         /* de-emphasised text: wordmark, date, empty state */
+  --color-muted: #9a917b;         /* de-emphasised text: date, empty state */
   --color-cue: #1a1712;           /* scroll-down chevron */
   --color-now: #1f6feb;           /* Day now-line, current block, current time */
   --color-cursor: #60a5fa;        /* keyboard Cursor ring */

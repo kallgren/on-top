@@ -33,8 +33,6 @@
 (defui app-header [{:keys [date]}]
   (let [[wd md] (today-parts date)]
     ($ :header {:class "mb-8 flex flex-col items-center gap-1.5 px-7 text-center wide:px-0"}
-       ($ :div {:class "pwa:hidden text-[34px] font-extrabold uppercase leading-none tracking-[0.28em] pl-[0.28em] text-muted text-inset"}
-          "On Top")
        ($ :div {:class "text-[19px] font-medium tracking-wide text-muted"}
           (str wd " · " md)))))
 
