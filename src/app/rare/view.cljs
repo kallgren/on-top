@@ -39,7 +39,7 @@
 
 ;; ── Components ───────────────────────────────────────────────────────────────
 
-(defui round-checkbox [{:keys [checked? on-toggle reveal-class]}]
+(defui round-checkbox [{:keys [checked? on-toggle class]}]
   ($ :button
      {:type "button"
       :aria-pressed checked?
@@ -50,7 +50,7 @@
                   (if checked?
                     "bg-done border-done"
                     "bg-transparent border-edge")
-                  " " reveal-class)}
+                  " " class)}
      (when checked?
        ($ :svg {:viewBox "0 0 10 10" :class "w-2.5 h-2.5 text-white" :fill "none"
                 :stroke "currentColor" :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"}
@@ -80,43 +80,71 @@
                  (when note
                    ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note)))})))
 
-(defui task-row [{:keys [row on-toggle on-open-details at-cursor?]}]
+(defui due-text [{:keys [due]}]
+  ($ :span {:class "text-[12px] font-semibold uppercase text-red-500"} due))
+
+(defui missed-badge [{:keys [missed]}]
+  ($ :span {:class "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-red-500/12 text-red-500"}
+     (str missed " missed")))
+
+(defui task-name [{:keys [name done? class]}]
+  ($ :span {:class (str "min-w-0 text-[15px] font-medium leading-snug text-label "
+                        (when done? "line-through ")
+                        class)}
+     name))
+
+(defui task-row-mobile [{:keys [row on-toggle]}]
   (let [{:keys [name note freq display-iso due-label done? missed]} row
-        due                due-label
+        {:keys [rel full today-or-yesterday?]} (date-display display-iso)
+        date-text (if today-or-yesterday? rel (str full " (" rel ")"))]
+    ($ :div {:class "flex items-start gap-3"}
+       ($ round-checkbox {:checked? done? :on-toggle #(on-toggle row) :class "mt-0.5"})
+       ($ :div {:class "flex min-w-0 flex-1 flex-col gap-1"}
+          ($ :div {:class "flex items-center gap-2"}
+             ($ task-name {:name name :done? done? :class "flex-1"})
+             (when note ($ note-marker)))
+          ($ :div {:class "flex items-center gap-2"}
+             ($ :div {:class "flex min-w-0 flex-1 items-center gap-2"}
+                ($ :span {:class "text-[13px] font-semibold text-muted"} date-text)
+                (when due-label ($ due-text {:due due-label}))
+                (when (pos? missed) ($ missed-badge {:missed missed})))
+             ($ freq-badge {:freq freq}))))))
+
+(defui task-row-desktop [{:keys [row on-toggle at-cursor?]}]
+  (let [{:keys [name note freq display-iso due-label done? missed]} row
         {:keys [rel full today-or-yesterday?]} (date-display display-iso)]
-    ($ :div
-       {:role "button"
-        :on-click #(on-open-details row)
-        ;; A focused row wears the hover face steadily plus the Cursor ring, so it
-        ;; reads the same as a hovered row.
-        :class (str "group flex w-full items-center gap-3 px-4 py-2.5 rounded-lg "
-                    "cursor-pointer select-none touch-manipulation text-left "
-                    (cond
-                      (and due at-cursor?) (str "bg-red-500/14 " cursor/cursor-ring " ")
-                      due                  "bg-red-500/8 hover:bg-red-500/14 "
-                      at-cursor?           (str "bg-page " cursor/cursor-ring " ")
-                      :else                "hover:bg-page "))}
+    ($ :div {:class "flex w-full items-center gap-3"}
        ($ round-checkbox {:checked? done?
                           :on-toggle #(on-toggle row)
-                          :reveal-class (if at-cursor?
-                                          "flex"
-                                          "hidden group-hover:flex")})
-       ($ :span {:class (str "text-[15px] font-medium leading-snug text-label "
-                             (when done? "line-through"))}
-          name)
+                          :class (if at-cursor? "flex" "hidden group-hover:flex")})
+       ($ task-name {:name name :done? done?})
        (when-not done?
          ($ :span {:class "text-[13px] font-semibold text-muted"} rel))
-       (when due
-         ($ :span {:class "text-[12px] font-semibold uppercase text-red-500"} due))
-       (when (pos? missed)
-         ($ :span {:class "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-red-500/12 text-red-500"}
-            (str missed " missed")))
+       (when due-label ($ due-text {:due due-label}))
+       (when (pos? missed) ($ missed-badge {:missed missed}))
        ($ :div {:class "flex-1"})
-       (when note
-         ($ note-marker))
+       (when note ($ note-marker))
        (when (or done? (not today-or-yesterday?))
          ($ :span {:class "text-[13px] font-semibold tabular-nums text-muted"} full))
        ($ freq-badge {:freq freq}))))
+
+(defui task-row [{:keys [row on-toggle on-open-details at-cursor?]}]
+  ($ :div
+     {:role "button"
+      :on-click #(on-open-details row)
+      ;; A focused row wears the hover face steadily plus the Cursor ring, so it
+      ;; reads the same as a hovered row.
+      :class (str "group block w-full px-4 py-2.5 rounded-lg "
+                  "cursor-pointer select-none touch-manipulation text-left "
+                  (cond
+                    (and (:due-label row) at-cursor?) (str "bg-red-500/14 " cursor/cursor-ring " ")
+                    (:due-label row)                  "bg-red-500/8 hover:bg-red-500/14 "
+                    at-cursor?                        (str "bg-page " cursor/cursor-ring " ")
+                    :else                             "hover:bg-page "))}
+     ($ :div {:class "wide:hidden"}
+        ($ task-row-mobile {:row row :on-toggle on-toggle}))
+     ($ :div {:class "hidden wide:block"}
+        ($ task-row-desktop {:row row :on-toggle on-toggle :at-cursor? at-cursor?}))))
 
 (defui task-list [{:keys [tasks on-toggle on-open-details class cursor-key]}]
   ($ :div {:class (str "flex flex-col" (when class (str " " class)))}
