@@ -12,7 +12,7 @@
               :aria-pressed aria-pressed
               :class (str "fixed top-7 z-20 hidden h-9 w-9 wide:flex items-center "
                           "justify-center rounded-lg cursor-pointer transition "
-                          "hover:bg-edge/30 "
+                          "hover:bg-edge/30 hover:text-label "
                           (if active? "text-label " "text-muted ")
                           class)}
      children))

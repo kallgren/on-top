@@ -154,23 +154,28 @@
             :reset-nonce reset-nonce
             :on-exit-left #(set-cursor-pane! :core)}}))
 
+;; ── Corner controls ──────────────────────────────────────────────────────────
+
+(defui corner-controls [{:keys [day-open? rare-open? toggle-day toggle-rare]}]
+  ($ :<>
+     ($ corner-toggle {:side :left
+                       :open? day-open?
+                       :on-click toggle-day
+                       :label "Show or hide the Day pane"
+                       :class "left-7"})
+     ($ help/view)
+     ($ corner-toggle {:side :right
+                       :open? rare-open?
+                       :on-click toggle-rare
+                       :label "Show or hide the Rare pane"
+                       :class "right-7"})))
+
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
-(defui surfaces [{:keys [today wide? layout notes schedule]}]
-  (let [{:keys [day-open? rare-open? toggle-day set-rare!]} layout
-        {:keys [ref active scroll-to]} (use-pane-scroll landing-pane)
-        {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare!)]
+(defui surfaces [{:keys [today wide? layout core rare notes schedule]}]
+  (let [{:keys [day-open? rare-open?]} layout
+        {:keys [ref active scroll-to]} (use-pane-scroll landing-pane)]
     ($ :<>
-       ($ corner-toggle {:side :left
-                         :open? day-open?
-                         :on-click toggle-day
-                         :label "Show or hide the Day pane"
-                         :class "left-7"})
-       ($ corner-toggle {:side :right
-                         :open? rare-open?
-                         :on-click toggle-rare
-                         :label "Show or hide the Rare pane"
-                         :class "right-7"})
        ($ :div {:ref ref
                 :class (str "no-scrollbar flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden "
                             "wide:snap-none wide:overflow-x-visible wide:overflow-y-visible")}
@@ -213,14 +218,19 @@
         focus-notes (tasks/todays-notes schedule today
                                         (map first (schedule/schedule->categories schedule)) notes)
         {:keys [running? items start! stop!]} (use-timer)
+        {:keys [day-open? rare-open? toggle-day set-rare!]} layout
+        {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare!)
         go! #(start! focus-notes)]
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ surfaces {:today today :wide? wide? :layout layout :notes notes :schedule schedule})
+       ($ corner-controls {:day-open? day-open?
+                           :rare-open? rare-open?
+                           :toggle-day toggle-day
+                           :toggle-rare toggle-rare})
+       ($ surfaces {:today today :wide? wide? :layout layout :core core :rare rare :notes notes :schedule schedule})
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
-       ($ help/view)
-       (when (and wide? (not (:day-open? layout))) ($ day-drawer {:today today})))))
+       (when (and wide? (not day-open?)) ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 
