@@ -27,11 +27,24 @@
         "occurrence 3 days out, inside its lead window — Due")
     (let [overdue (cur {:id "b" :anchor "Jun 5" :lead-days 7})]
       (is (:due? overdue) "occurrence 10 days past, not done — still Due")
-      (is (nil? (:due-label overdue)) "overdue carries no countdown, only the Due flag"))
+      (is (= "Due 10 days ago" (:due-label overdue))
+          "overdue flips the countdown to a count-up"))
     (is (not (:due? (cur {:id "c" :anchor "Jul 5" :lead-days 30})))
         "occurrence 20 days out — current within lead window, but not yet Due")
     (is (not (:due? (cur {:id "d" :anchor "Jun 1"})))
         "an overdue *non-deadline* task is never Due")))
+
+(deftest due-label-flips-across-the-anchor
+  (let [label (fn [anchor today]
+                (-> (sch/task-rows :digital "yearly" {:id "x" :anchor anchor :lead-days 30}
+                                   nil today)
+                    (->> (remove :done?))
+                    first
+                    :due-label))]
+    (is (= "Due tomorrow"   (label "Jun 16" (js/Date. 2026 5 15))))
+    (is (= "Due today"      (label "Jun 15" (js/Date. 2026 5 15))))
+    (is (= "Due yesterday"  (label "Jun 14" (js/Date. 2026 5 15))))
+    (is (= "Due 2 days ago" (label "Jun 13" (js/Date. 2026 5 15))))))
 
 (deftest done-deadline-row-is-not-due
   (let [today (js/Date. 2026 5 15)

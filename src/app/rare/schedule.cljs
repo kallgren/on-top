@@ -52,14 +52,17 @@
 ;; ── Collapse derivation ──────────────────────────────────────────────────────
 
 (defn- due-label
-  "Countdown shown on a deadline occurrence `days` out, or nil outside the
-  0–7 day window — further out reads as not-yet-urgent."
+  "Countdown shown on a pressing deadline occurrence: a forward count inside the
+  0–7 day window, flipping to an overdue count once the occurrence has passed.
+  Nil further out, where it reads as not-yet-urgent."
   [days]
-  (when (<= 0 days 7)
+  (when (<= days 7)
     (cond
-      (= days 0) "Due today"
-      (= days 1) "Due tomorrow"
-      :else      (str "Due in " days " days"))))
+      (= days 0)  "Due today"
+      (= days 1)  "Due tomorrow"
+      (pos? days) (str "Due in " days " days")
+      (= days -1) "Due yesterday"
+      :else       (str "Due " (- days) " days ago"))))
 
 (defn- due?
   "Whether a deadline occurrence `days` out is pressing: inside the 0–7 day
