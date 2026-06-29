@@ -1,5 +1,6 @@
 (ns app.rare.view
   (:require [uix.core :refer [defui $ use-state]]
+            [app.badge :as badge]
             [app.config :as config]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
@@ -137,10 +138,10 @@
       :class (str "group block w-full px-4 py-2.5 rounded-lg "
                   "cursor-pointer select-none touch-manipulation text-left "
                   (cond
-                    (and (:due-label row) at-cursor?) (str "bg-red-500/14 " cursor/cursor-ring " ")
-                    (:due-label row)                  "bg-red-500/8 hover:bg-red-500/14 "
-                    at-cursor?                        (str "bg-page " cursor/cursor-ring " ")
-                    :else                             "hover:bg-page "))}
+                    (and (:due? row) at-cursor?) (str "bg-red-500/14 " cursor/cursor-ring " ")
+                    (:due? row)                  "bg-red-500/8 hover:bg-red-500/14 "
+                    at-cursor?                   (str "bg-page " cursor/cursor-ring " ")
+                    :else                        "hover:bg-page "))}
      ($ :div {:class "wide:hidden"}
         ($ task-row-mobile {:row row :on-toggle on-toggle}))
      ($ :div {:class "hidden wide:block"}
@@ -233,6 +234,7 @@
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         [details set-details!] (use-state nil)
+        toggle         (badge/use-due-badge (->> by-category vals (apply concat)) toggle)
         categories     (schedule/schedule->categories schedule)
         cards          (cards/build-cards by-category categories expanded)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
