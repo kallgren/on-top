@@ -1,5 +1,5 @@
 (ns app.rare.view
-  (:require [uix.core :refer [defui $ use-state use-ref use-callback]]
+  (:require [uix.core :refer [defui $ use-state]]
             [app.badge :as badge]
             [app.config :as config]
             [app.cursor :as cursor]
@@ -234,20 +234,11 @@
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         [details set-details!] (use-state nil)
-        asked?         (use-ref false)
-        toggle*        (use-callback
-                        (fn [row]
-                          (when-not @asked?
-                            (reset! asked? true)
-                            (badge/request-permission!))
-                          (toggle row))
-                        [toggle])
-        due-count      (->> by-category vals (apply concat) (filter :due?) count)
+        toggle         (badge/use-due-badge (->> by-category vals (apply concat)) toggle)
         categories     (schedule/schedule->categories schedule)
         cards          (cards/build-cards by-category categories expanded)
-        focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle* cursor)
+        focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
         cursor-key     (:key focused)]
-    (badge/use-app-badge due-count)
     (use-hotkey (keymap/key-of :open-details)
                 #(when focused (set-details! focused)))
     ($ :div {:class "flex flex-col gap-4"}
@@ -256,7 +247,7 @@
                            :label     label
                            :completed completed :current current :upcoming upcoming
                            :show-completed? show-completed? :show-upcoming? show-upcoming?
-                           :on-toggle toggle*
+                           :on-toggle toggle
                            :on-open-details set-details!
                            :cursor-key cursor-key
                            :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
