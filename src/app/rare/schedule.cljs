@@ -61,6 +61,12 @@
       (= days 1) "Due tomorrow"
       :else      (str "Due in " days " days"))))
 
+(defn- due?
+  "Whether a deadline occurrence `days` out is pressing: inside the 0–7 day
+  countdown or already overdue (negative). Ordinary tasks (zero lead) never are."
+  [lead-days days]
+  (and (pos? lead-days) (<= days 7)))
+
 (defn task-rows
   "Collapse one task to at most two rows (one per visible section) given its
   `done-through-iso` (or nil) and today. Placement by done-through (dt) vs today:
@@ -71,42 +77,46 @@
   | behind (dt < due)   | earliest pending occ + X missed  | the dt occurrence  | —             |
   | caught up (dt ≥ due)| —                                | the dt occurrence  | next future occ |
 
-  Lead time (`:before N` days) shifts only the current-ness threshold: occurrences
-  are measured against an effective ceiling of `today + before`, so a deadline task
-  surfaces as current once it enters its lead window. The displayed date is the
-  occurrence date itself; `:due-label` carries the ready-to-render countdown string.
+  Lead time (`:lead-days N`) shifts only the current-ness threshold: occurrences
+  are measured against an effective ceiling of `today + lead-days`, so a deadline
+  task surfaces as current once it enters its lead window. The displayed date is the
+  occurrence date itself; `:due-label` carries the ready-to-render countdown string
+  and `:due?` flags the pressing (countdown-or-overdue) rows the badge counts.
 
   Each row declares the `:set-done-through` it writes on click, so the toggle handler
   is a plain `(assoc completions id set-done-through)` with no branching on row type."
   [category freq task done-through-iso today]
-  (let [{:keys [id anchor before]} task
-        before    (or before 0)
+  (let [{:keys [id anchor lead-days]} task
+        lead-days (or lead-days 0)
         step      (interval->step freq)
         anchor-d  (parse-month-day anchor (.getFullYear today))
-        lead-ceil (js/Date. (+ (.getTime today) (* before 86400000)))
+        lead-ceil (js/Date. (+ (.getTime today) (* lead-days 86400000)))
         ld        (latest-due anchor-d step lead-ceil)
         dt        (when done-through-iso (iso->date done-through-iso))
         behind?   (and dt (< (.getTime dt) (.getTime ld)))
         caught?   (and dt (>= (.getTime dt) (.getTime ld)))
         pending   (when behind? (pending-after dt step lead-ceil))
         row       (fn [role occ extra]
-                    (merge
-                     {:id          id
-                      :category    category
-                      :freq        freq
-                      :display-iso (iso-date occ)
-                      :sort-key    (.getTime occ)
-                      :due-label   (when (pos? before) (due-label (days-between today occ)))
-                      :done?       false
-                      :upcoming?   false
-                      :missed      0
-                      :key         (str id "/" role)}
-                     extra))]
+                    (let [days-out (days-between today occ)]
+                      (merge
+                       {:id          id
+                        :category    category
+                        :freq        freq
+                        :display-iso (iso-date occ)
+                        :sort-key    (.getTime occ)
+                        :due-label   (when (pos? lead-days) (due-label days-out))
+                        :due?        (due? lead-days days-out)
+                        :done?       false
+                        :upcoming?   false
+                        :missed      0
+                        :key         (str id "/" role)}
+                       extra)))]
     (cond-> []
       ;; completed (inline) — emitted whenever a done-through exists
       dt        (conj (row "done" dt
                            {:done?            true
                             :due-label        nil
+                            :due?             false
                             :set-done-through (iso-date (step-date dt (negate-step step)))}))
       ;; current — nil floor or behind
       (nil? dt) (conj (row "cur" ld

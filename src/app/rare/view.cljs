@@ -1,5 +1,6 @@
 (ns app.rare.view
-  (:require [uix.core :refer [defui $ use-state]]
+  (:require [uix.core :refer [defui $ use-state use-ref use-callback]]
+            [app.badge :as badge]
             [app.config :as config]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
@@ -137,10 +138,10 @@
       :class (str "group block w-full px-4 py-2.5 rounded-lg "
                   "cursor-pointer select-none touch-manipulation text-left "
                   (cond
-                    (and (:due-label row) at-cursor?) (str "bg-red-500/14 " cursor/cursor-ring " ")
-                    (:due-label row)                  "bg-red-500/8 hover:bg-red-500/14 "
-                    at-cursor?                        (str "bg-page " cursor/cursor-ring " ")
-                    :else                             "hover:bg-page "))}
+                    (and (:due? row) at-cursor?) (str "bg-red-500/14 " cursor/cursor-ring " ")
+                    (:due? row)                  "bg-red-500/8 hover:bg-red-500/14 "
+                    at-cursor?                   (str "bg-page " cursor/cursor-ring " ")
+                    :else                        "hover:bg-page "))}
      ($ :div {:class "wide:hidden"}
         ($ task-row-mobile {:row row :on-toggle on-toggle}))
      ($ :div {:class "hidden wide:block"}
@@ -233,10 +234,20 @@
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         [details set-details!] (use-state nil)
+        asked?         (use-ref false)
+        toggle*        (use-callback
+                        (fn [row]
+                          (when-not @asked?
+                            (reset! asked? true)
+                            (badge/request-permission!))
+                          (toggle row))
+                        [toggle])
+        due-count      (->> by-category vals (apply concat) (filter :due?) count)
         categories     (schedule/schedule->categories schedule)
         cards          (cards/build-cards by-category categories expanded)
-        focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
+        focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle* cursor)
         cursor-key     (:key focused)]
+    (badge/use-app-badge due-count)
     (use-hotkey (keymap/key-of :open-details)
                 #(when focused (set-details! focused)))
     ($ :div {:class "flex flex-col gap-4"}
@@ -245,7 +256,7 @@
                            :label     label
                            :completed completed :current current :upcoming upcoming
                            :show-completed? show-completed? :show-upcoming? show-upcoming?
-                           :on-toggle toggle
+                           :on-toggle toggle*
                            :on-open-details set-details!
                            :cursor-key cursor-key
                            :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
