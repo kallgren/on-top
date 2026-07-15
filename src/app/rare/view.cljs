@@ -84,9 +84,10 @@
 (defui due-text [{:keys [due]}]
   ($ :span {:class "text-[12px] font-semibold uppercase text-red-500"} due))
 
-(defui missed-badge [{:keys [missed]}]
-  ($ :span {:class "shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-red-500/12 text-red-500"}
-     (str missed " missed")))
+(defui missed-stamp [{:keys [missed]}]
+  ($ :span {:class (str "shrink-0 flex h-5 min-w-5 items-center justify-center "
+                        "rounded-full px-1.5 bg-stamp text-[11px] font-bold tabular-nums text-label")}
+     (inc missed)))
 
 (defui task-name [{:keys [name done? class]}]
   ($ :span {:class (str "min-w-0 text-[15px] font-medium leading-snug text-label "
@@ -102,13 +103,15 @@
        ($ round-checkbox {:checked? done? :on-toggle #(on-toggle row) :class "mt-0.5"})
        ($ :div {:class "flex min-w-0 flex-1 flex-col gap-1"}
           ($ :div {:class "flex items-center gap-2"}
-             ($ task-name {:name name :done? done? :class "flex-1"})
+             ($ :div {:class "flex min-w-0 items-center gap-1.5"}
+                (when (pos? missed) ($ missed-stamp {:missed missed}))
+                ($ task-name {:name name :done? done? :class "min-w-0"}))
+             ($ :div {:class "flex-1"})
              (when note ($ note-marker)))
           ($ :div {:class "flex items-center gap-2"}
              ($ :div {:class "flex min-w-0 flex-1 items-center gap-2"}
                 ($ :span {:class "text-[13px] font-semibold text-muted"} date-text)
-                (when due-label ($ due-text {:due due-label}))
-                (when (pos? missed) ($ missed-badge {:missed missed})))
+                (when due-label ($ due-text {:due due-label})))
              ($ freq-badge {:freq freq}))))))
 
 (defui task-row-desktop [{:keys [row on-toggle at-cursor?]}]
@@ -118,11 +121,12 @@
        ($ round-checkbox {:checked? done?
                           :on-toggle #(on-toggle row)
                           :class (if at-cursor? "flex" "hidden group-hover:flex")})
-       ($ task-name {:name name :done? done?})
+       ($ :div {:class "flex min-w-0 items-center gap-1.5"}
+          (when (pos? missed) ($ missed-stamp {:missed missed}))
+          ($ task-name {:name name :done? done?}))
        (when-not done?
          ($ :span {:class "text-[13px] font-semibold text-muted"} rel))
        (when due-label ($ due-text {:due due-label}))
-       (when (pos? missed) ($ missed-badge {:missed missed}))
        ($ :div {:class "flex-1"})
        (when note ($ note-marker))
        (when (or done? (not today-or-yesterday?))
