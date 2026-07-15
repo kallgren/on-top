@@ -159,13 +159,13 @@
      ($ corner-toggle {:side :left
                        :open? day-open?
                        :on-click toggle-day
-                       :label "Show or hide the Day pane"
+                       :label (if day-open? "Hide left pane" "Show left pane")
                        :class "left-7"})
      ($ help/view)
      ($ corner-toggle {:side :right
                        :open? rare-open?
                        :on-click toggle-rare
-                       :label "Show or hide the Rare pane"
+                       :label (if rare-open? "Hide right pane" "Show right pane")
                        :class "right-7"})))
 
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────

@@ -83,25 +83,29 @@
                   (if done? "Time's up" (mmss left)))
                ($ :div {:class "flex items-center gap-1"}
                   (when (seq items)
-                    ($ :button {:on-click #(set-notes-open! (not notes-open?))
-                                :aria-expanded notes-open?
-                                :aria-label (if notes-open? "Hide notes" "Show notes")
-                                :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
-                                            "transition-colors "
-                                            (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
-                       ($ :svg {:viewBox "0 0 24 24"
-                                :class (str "h-[20px] w-[20px] transition-transform " (when-not notes-open? "rotate-180"))
-                                :fill "none" :stroke "currentColor" :stroke-width 2
-                                :stroke-linecap "round" :stroke-linejoin "round"}
-                          ($ :path {:d "M6 9l6 6 6-6"}))))
+                    (let [notes-label (if notes-open? "Hide notes" "Show notes")]
+                      ($ :button {:on-click #(set-notes-open! (not notes-open?))
+                                  :aria-expanded notes-open?
+                                  :aria-label notes-label
+                                  :title notes-label
+                                  :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
+                                              "transition-colors "
+                                              (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
+                         ($ :svg {:viewBox "0 0 24 24"
+                                  :class (str "h-[20px] w-[20px] transition-transform " (when-not notes-open? "rotate-180"))
+                                  :fill "none" :stroke "currentColor" :stroke-width 2
+                                  :stroke-linecap "round" :stroke-linejoin "round"}
+                            ($ :path {:d "M6 9l6 6 6-6"})))))
                   ($ :button {:on-click on-stop
                               :aria-label "Close timer"
+                              :title "Close timer"
                               :class (str "flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full "
                                           "text-[22px] leading-none transition-colors "
                                           (if done? "text-white hover:bg-white/15" "text-muted hover:bg-edge/30"))}
                      "✕")))))
       ($ :button {:on-click on-go
                   :aria-label "Start 30-minute timer"
+                  :title "Start 30-minute timer"
                   :class (str "fixed bottom-[calc(1.75rem+env(safe-area-inset-bottom))] right-7 z-20 "
                               "flex h-16 w-16 items-center justify-center rounded-full "
                               "border-2 border-edge bg-surface text-muted "

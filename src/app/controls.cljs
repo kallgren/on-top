@@ -9,6 +9,7 @@
 (defui corner-button [{:keys [on-click label class active? aria-pressed children]}]
   ($ :button {:on-click on-click
               :aria-label label
+              :title label
               :aria-pressed aria-pressed
               :class (str "fixed top-7 z-20 hidden h-9 w-9 wide:flex items-center "
                           "justify-center rounded-lg cursor-pointer transition "
