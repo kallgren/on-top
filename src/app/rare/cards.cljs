@@ -9,13 +9,15 @@
 (defn build-cards
   "Per-category card data for Rare. `by-category` is the store's category->rows
    fn, `categories` the ordered [cat label] pairs, `expanded` the fold-state map
-   {cat {:completed? bool :upcoming? bool}}. Drops empty categories."
-  [by-category categories expanded]
+   {cat {:completed? bool :upcoming? bool}}. Always drops categories with no rows;
+   unless `show-cleared?`, also drops the cleared ones — nothing Current, only
+   completed and/or upcoming."
+  [by-category categories expanded show-cleared?]
   (vec (for [[cat label] categories
-             :let [cat-rows (by-category cat)]
-             :when (seq cat-rows)]
-         (let [{:keys [completed current upcoming]} (partition-tasks cat-rows)
-               exp (get expanded cat)]
+             :let [{:keys [completed current upcoming]} (partition-tasks (by-category cat))]
+             :when (or (seq current)
+                       (and show-cleared? (or (seq completed) (seq upcoming))))]
+         (let [exp (get expanded cat)]
            {:cat cat :label label
             :completed completed :current current :upcoming upcoming
             :show-completed? (:completed? exp)

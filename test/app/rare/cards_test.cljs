@@ -22,16 +22,38 @@
   [[:digital "Digital"]
    [:household "Household"]])
 
-(deftest build-cards-drops-empty-categories
+(def two-plus-categories
+  [[:digital "Digital"]
+   [:household "Household"]
+   [:errands "Errands"]])
+
+(deftest build-cards-drops-categories-with-no-rows
   (let [by-cat {:digital [{:key "a" :sort-key 1}]
-                :household []}
-        built  (cards/build-cards by-cat two-categories {})]
-    (is (= [:digital] (map :cat built)) "categories with no rows are dropped")))
+                :household []}]
+    (is (= [:digital] (map :cat (cards/build-cards by-cat two-categories {} false)))
+        "categories with no rows are dropped when cleared is hidden")
+    (is (= [:digital] (map :cat (cards/build-cards by-cat two-categories {} true)))
+        "categories with no rows are dropped even when cleared is shown")))
+
+(deftest build-cards-hides-cleared-categories-by-default
+  (let [by-cat {:digital   [{:key "a" :sort-key 1}]
+                :household [{:key "d" :sort-key 1 :done? true}]
+                :errands   [{:key "u" :sort-key 1 :upcoming? true}]}]
+    (is (= [:digital] (map :cat (cards/build-cards by-cat two-plus-categories {} false)))
+        "a category with nothing Current is dropped when cleared is hidden")))
+
+(deftest build-cards-reveals-cleared-categories-when-shown
+  (let [by-cat {:digital   [{:key "a" :sort-key 1}]
+                :household [{:key "d" :sort-key 1 :done? true}]
+                :errands   [{:key "u" :sort-key 1 :upcoming? true}]}]
+    (is (= [:digital :household :errands]
+           (map :cat (cards/build-cards by-cat two-plus-categories {} true)))
+        "completed-only and upcoming-only categories reappear when cleared is shown")))
 
 (deftest build-cards-preserves-category-order
   (let [by-cat {:digital   [{:key "a" :sort-key 1}]
                 :household [{:key "b" :sort-key 1}]}
-        built  (cards/build-cards by-cat two-categories {})]
+        built  (cards/build-cards by-cat two-categories {} false)]
     (is (= [:digital :household] (map :cat built))
         "cards follow the categories order")))
 
@@ -39,14 +61,14 @@
   (let [by-cat {:digital [{:key "a" :sort-key 1}]}
         cats   [[:digital "Digital"]]]
     (is (= {:show-completed? nil :show-upcoming? nil}
-           (select-keys (first (cards/build-cards by-cat cats {})) [:show-completed? :show-upcoming?]))
+           (select-keys (first (cards/build-cards by-cat cats {} false)) [:show-completed? :show-upcoming?]))
         "absent fold state reads as nil")
     (is (= {:show-completed? true :show-upcoming? nil}
-           (select-keys (first (cards/build-cards by-cat cats {:digital {:completed? true}}))
+           (select-keys (first (cards/build-cards by-cat cats {:digital {:completed? true}} false))
                         [:show-completed? :show-upcoming?]))
         "partial fold state reads each flag independently")
     (is (= {:show-completed? true :show-upcoming? true}
-           (select-keys (first (cards/build-cards by-cat cats {:digital {:completed? true :upcoming? true}}))
+           (select-keys (first (cards/build-cards by-cat cats {:digital {:completed? true :upcoming? true}} false))
                         [:show-completed? :show-upcoming?]))
         "both flags read from the map")))
 

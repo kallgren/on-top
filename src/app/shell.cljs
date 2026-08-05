@@ -171,7 +171,7 @@
 ;; ── Surfaces ─────────────────────────────────────────────────────────────────
 
 (defui surfaces [{:keys [today wide? layout core rare notes schedule]}]
-  (let [{:keys [day-open? rare-open?]} layout
+  (let [{:keys [day-open? rare-open? show-cleared?]} layout
         {:keys [ref active scroll-to]} (use-pane-scroll landing-pane)]
     ($ :<>
        ($ :div {:ref ref
@@ -186,7 +186,7 @@
           ($ :section {:class (str "w-full shrink-0 snap-center wide:w-[42rem]"
                                    (when-not rare-open? " wide:hidden"))}
              ($ :div {:class "mx-auto w-full max-w-2xl px-4 wide:px-7"}
-                ($ rare/view {:today today :cursor rare :notes notes}))))
+                ($ rare/view {:today today :cursor rare :notes notes :show-cleared? show-cleared?}))))
        ($ pane-dots {:active active :on-select scroll-to}))))
 
 ;; ── Desktop drawer ───────────────────────────────────────────────────────────

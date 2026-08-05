@@ -221,7 +221,7 @@
                    :expanded? show-completed? :on-fold on-toggle-completed :top? true
                    :cursor-key cursor-key}))
         (if (empty? current)
-          ($ :p {:class "py-4 text-center text-[15px] font-medium italic text-muted"}
+          ($ :p {:class "pt-[5px] pb-[25px] text-center text-[15px] font-medium italic text-muted"}
              "All clear!")
           ($ task-list {:tasks current :on-toggle on-toggle :on-open-details on-open-details
                         :cursor-key cursor-key}))
@@ -233,14 +233,14 @@
 
 ;; ── View ─────────────────────────────────────────────────────────────────────
 
-(defui view [{:keys [today cursor notes]}]
+(defui view [{:keys [today cursor notes show-cleared?]}]
   (let [schedule       (sched/use-schedule config/rare-schedule-file schedule-cache-key seed-schedule)
         [by-category toggle] (store/use-store today schedule notes)
         [expanded set-expanded!] (use-state {})
         [details set-details!] (use-state nil)
         toggle         (badge/use-due-badge (->> by-category vals (apply concat)) toggle)
         categories     (schedule/schedule->categories schedule)
-        cards          (cards/build-cards by-category categories expanded)
+        cards          (cards/build-cards by-category categories expanded show-cleared?)
         focused        (cursor/use-list-cursor (cards/visible-rows cards) toggle cursor)
         cursor-key     (:key focused)]
     (use-hotkey (keymap/key-of :open-details)
