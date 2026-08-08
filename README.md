@@ -30,6 +30,21 @@ Tech: [ClojureScript](https://clojurescript.org) with
 <!-- CI lints, format-checks, tests and release-builds on every push, then deploys a
 prebuilt artifact to Vercel. -->
 
+The app is currently not intended for public use, but you totally can use it if you want (no guarantees on future breaking changes, though!)
+
+First, see it in action with some demo tasks [here](https://on-top-routines.vercel.app).
+
+Then if you want to try it with your own schedule, you will need:
+- A GitHub gist containing your schedule files in the proper format
+- Optionally: a Supabase database table (free tier) if you want cross-device sync of your completions or just a remote backup
+
+See [configuration](docs/configuration.md) for details.
+
+Try it out if you'd like! And let me know how it went! Hit me up if you have any questions.
+
+> [!NOTE]
+> I use it on macOS and iOS as a PWA, and it is currently only tested on those platforms
+
 <!-- ## Rationale
 
 I wanted a minimal maintenance simple as possible. Landed with no backend and instead hosting the schedule on GitHub Gists and completions on a user-supplied Supabase database. Communicating straight to the database from the browser like this is of course not ideal security-wise, but ok for me since there is no sensitive data and -->
