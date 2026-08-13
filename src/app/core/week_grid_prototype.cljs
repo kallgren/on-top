@@ -134,12 +134,16 @@
 
 ;; ── Cells ────────────────────────────────────────────────────────────────────
 
-(defui day-header [{:keys [letters offset]}]
+(defui day-header [{:keys [letters offset today-col]}]
   ($ :<>
-     (for [[i letter] (map-indexed vector letters)]
+     (for [[i letter] (map-indexed vector letters)
+           :let [today? (= (+ offset i) today-col)]]
        ($ :div {:key i
                 :style #js {:gridRow 1 :gridColumn (+ offset i)}
-                :class "pb-1 text-center text-[13px] font-bold uppercase tracking-[0.2em] text-heading"}
+                :class (str "pb-1 text-center text-[13px] font-bold uppercase tracking-[0.2em] "
+                            (if today?
+                              "-mx-1.5 rounded-xl bg-today pt-1 text-label"
+                              "text-heading"))}
           letter))))
 
 (defui band-label [{:keys [label row height]}]
@@ -149,7 +153,7 @@
 
 (defui today-wash [{:keys [col from to]}]
   ($ :div {:style #js {:gridRow (str from " / " to) :gridColumn col}
-           :class "-m-1.5 rounded-3xl bg-surface"}))
+           :class "-m-1.5 rounded-2xl bg-today"}))
 
 (defui separator [{:keys [row span]}]
   ($ :div {:style #js {:gridRow row :gridColumn (str "1 / span " span)}
@@ -162,19 +166,22 @@
 (defui cell
   "The label stays put whether or not the Occurrence is done, so the grid reads
    as the Schedule too and not only as a state of completion. Done is the green
-   fill plus a corner tick — the day face keeps its big ✓."
-  [{:keys [name done? on-click row col]}]
+   fill plus a corner tick — the day face keeps its big ✓. Occurrences after
+   today are inert: still readable as schedule, not claimable as coverage."
+  [{:keys [name done? future? on-click row col]}]
   ($ :button
-     {:on-click on-click
+     {:on-click (when-not future? on-click)
+      :disabled future?
       :aria-pressed done?
       :aria-label name
       :style #js {:gridRow row :gridColumn col}
       :class (str "relative flex aspect-[2/1] w-full items-center justify-center "
-                  "overflow-hidden cursor-pointer select-none rounded-xl border-2 px-2 "
+                  "overflow-hidden select-none rounded-xl border-2 px-2 "
                   "transition-colors duration-100 [container-type:inline-size] "
-                  (if done?
-                    "bg-done border-done"
-                    "bg-surface border-edge hover:bg-surface-hover"))}
+                  (if done? "bg-done border-done " "bg-surface border-edge ")
+                  (if future?
+                    "cursor-default opacity-45 "
+                    (str "cursor-pointer " (when-not done? "hover:bg-surface-hover "))))}
      ($ :span {:class (str "line-clamp-3 text-center font-bold leading-tight text-label-fluid "
                            (if done? "text-white" "text-label"))}
         name)
@@ -184,10 +191,11 @@
 
 (defui two-block-grid [{:keys [today schedule categories notes completions toggle]}]
   (let [bs (placed schedule categories (blocks today) true)
-        col-of-today (+ 2 (weekday-index today))]
+        col-of-today (+ 2 (weekday-index today))
+        today-key (iso-date today)]
     ($ :div {:class "grid w-full items-stretch gap-2"
              :style #js {:gridTemplateColumns "max-content repeat(7, minmax(0, 1fr))"}}
-       ($ day-header {:letters day-letters :offset 2})
+       ($ day-header {:letters day-letters :offset 2 :today-col col-of-today})
        (for [{:keys [parity dates current? bands label-row start-row end-row sep-row] :as blk} bs]
          ($ :div {:key (str parity "-" (iso-date (first dates))) :class "contents"}
             (when sep-row ($ separator {:row sep-row :span 8}))
@@ -208,6 +216,7 @@
                    ($ cell {:key (str key "-" id)
                             :name (notes/name-for notes id)
                             :done? (boolean (core-store/covered? completions id key))
+                            :future? (pos? (compare key today-key))
                             :on-click #(toggle id date)
                             :row (+ row j)
                             :col (+ 2 i)})))))))))

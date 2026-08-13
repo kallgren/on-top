@@ -10,6 +10,7 @@
   --color-surface-hover: #fdfbf6; /* near-white hover */
   --color-edge: #c6bba0;          /* button border (resting) */
   --color-stamp: #d7ceb9;         /* missed-count stamp: edge @50% flattened over page */
+  --color-today: #dbd3bf;         /* week grid: today's column, a step darker than page */
   --color-done: #2e7d32;          /* whole button when checked */
   --color-label: #36322a;         /* task label */
   --color-heading: #9b8f73;       /* category headings */
@@ -26,6 +27,7 @@
     --color-surface-hover: #253554; /* lighter hover */
     --color-edge: #324063;          /* resting button border */
     --color-stamp: #212c46;         /* missed-count stamp: edge @50% flattened over page */
+    --color-today: #08101d;         /* week grid: today's column, a step darker than page */
     --color-done: #35b06a;          /* brighter green so it pops on blue */
     --color-label: #e9eefa;         /* cool near-white text */
     --color-heading: #7e8caa;       /* muted cool-blue headings */
