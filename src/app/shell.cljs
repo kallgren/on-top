@@ -5,6 +5,7 @@
             [app.controls :as controls]
             [app.core.tasks :as tasks]
             [app.core.view :as core]
+            [app.core.week-grid-prototype :as week-grid]
             [app.day.view :as day]
             [app.help :as help]
             [app.keybinding :as keybinding]
@@ -213,8 +214,9 @@
         layout (layout/use-layout)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
-        focus-notes (tasks/todays-notes schedule today
-                                        (map first (schedule/schedule->categories schedule)) notes)
+        categories (schedule/schedule->categories schedule)
+        focus-notes (tasks/todays-notes schedule today (map first categories) notes)
+        grid? (week-grid/use-week-grid)
         {:keys [running? items start! stop!]} (use-timer)
         {:keys [day-open? rare-open? toggle-day set-rare!]} layout
         {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare!)
@@ -222,13 +224,16 @@
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
-       ($ corner-controls {:day-open? day-open?
-                           :rare-open? rare-open?
-                           :toggle-day toggle-day
-                           :toggle-rare toggle-rare})
-       ($ surfaces {:today today :wide? wide? :layout layout :core core :rare rare :notes notes :schedule schedule})
+       (when-not grid?
+         ($ corner-controls {:day-open? day-open?
+                             :rare-open? rare-open?
+                             :toggle-day toggle-day
+                             :toggle-rare toggle-rare}))
+       (if grid?
+         ($ week-grid/view {:today today :schedule schedule :categories categories :notes notes})
+         ($ surfaces {:today today :wide? wide? :layout layout :core core :rare rare :notes notes :schedule schedule}))
        ($ timer {:running? running? :items items :on-go go! :on-stop stop!})
-       (when (and wide? (not day-open?)) ($ day-drawer {:today today})))))
+       (when (and wide? (not day-open?) (not grid?)) ($ day-drawer {:today today})))))
 
 ;; ── Mount ────────────────────────────────────────────────────────────────────
 

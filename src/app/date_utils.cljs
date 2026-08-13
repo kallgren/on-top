@@ -23,7 +23,7 @@
         diff (- (mid to) (mid from))]
     (Math/round (/ diff 86400000))))
 
-(defn- iso-week [date]
+(defn iso-week [date]
   (let [d   (js/Date. (js/Date.UTC (.getFullYear date) (.getMonth date) (.getDate date)))
         day (let [g (.getUTCDay d)] (if (zero? g) 7 g))]
     (.setUTCDate d (+ (.getUTCDate d) (- 4 day)))      ; Thursday of this week
