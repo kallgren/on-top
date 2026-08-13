@@ -5,7 +5,7 @@
             [app.controls :as controls]
             [app.core.tasks :as tasks]
             [app.core.view :as core]
-            [app.core.week-grid-prototype :as week-grid]
+            [app.core.week-grid :as week-grid]
             [app.day.view :as day]
             [app.help :as help]
             [app.keybinding :as keybinding]
@@ -124,8 +124,9 @@
    ADR-0011). Borrows Rare's open state from the Layout via `rare-open?`/`set-rare!`
    so toggling Rare keeps the Cursor in step. Returns `{:toggle-rare :core :rare}`,
    where `:core`/`:rare` are opaque `use-list-cursor` opts bundles each Surface
-   forwards untouched."
-  [rare-open? set-rare!]
+   forwards untouched. While `suspended?` the `r` hotkey is a no-op, so a face
+   that has replaced the Panes cannot be typed out from under."
+  [rare-open? set-rare! suspended?]
   (let [[cursor-pane set-cursor-pane!] (use-state :core)
         [reset-nonce set-reset-nonce!] (use-state 0)
         dismiss (use-callback
@@ -140,7 +141,7 @@
                          (when (and (not opening?) (= cursor-pane :rare))
                            (dismiss))))
                      [rare-open? set-rare! cursor-pane dismiss])]
-    (keybinding/use-hotkey (keymap/key-of :toggle-rare) toggle-rare)
+    (keybinding/use-hotkey (keymap/key-of :toggle-rare) #(when-not suspended? (toggle-rare)))
     {:toggle-rare toggle-rare
      :core {:active? (= cursor-pane :core)
             :on-dismiss dismiss
@@ -162,7 +163,6 @@
                        :on-click toggle-day
                        :label (if day-open? "Hide left pane" "Show left pane")
                        :class "left-7"})
-     ($ help/view)
      ($ corner-toggle {:side :right
                        :open? rare-open?
                        :on-click toggle-rare
@@ -211,19 +211,20 @@
 (defui app []
   (let [today (use-today)
         wide? (use-wide?)
-        layout (layout/use-layout)
+        grid? (week-grid/use-week-grid)
+        layout (layout/use-layout grid?)
         notes (shared-notes/use-notes seed-notes)
         schedule (sched/use-schedule config/core-schedule-file core/schedule-cache-key core/seed-schedule)
         categories (schedule/schedule->categories schedule)
         focus-notes (tasks/todays-notes schedule today (map first categories) notes)
-        grid? (week-grid/use-week-grid)
         {:keys [running? items start! stop!]} (use-timer)
         {:keys [day-open? rare-open? toggle-day set-rare!]} layout
-        {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare!)
+        {:keys [toggle-rare core rare]} (use-pane-cursor rare-open? set-rare! grid?)
         go! #(start! focus-notes)]
     (keybinding/use-hotkey (keymap/key-of :toggle-timer) #(if running? (stop!) (go!)))
     ($ :div {:class "pt-12 pb-10 wide:px-7"}
        ($ app-header {:date today})
+       ($ help/view)
        (when-not grid?
          ($ corner-controls {:day-open? day-open?
                              :rare-open? rare-open?

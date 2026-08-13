@@ -1,10 +1,12 @@
-(ns app.core.week-grid-prototype
-  "PROTOTYPE — throwaway, not production code. Core's Week grid: the whole
-   two-week cycle at once, both Week parity halves in Schedule order, seven
-   weekdays across and Categories down. Same Occurrences and the same
-   Done-through store as the day face — no new persistence. Entered with `w` on
-   wide viewports, ephemeral, and a full-width takeover while it is up. Delete
-   with the branch."
+(ns app.core.week-grid
+  "Core's Week grid: the whole two-week cycle at once, both Week parity halves in
+   Schedule order, seven weekdays across and Categories down. Same Occurrences
+   and the same Done-through store as the day face — no new persistence.
+
+   On trial. Entered with `w` on wide viewports, ephemeral, and a full-width
+   takeover while it is up: keyboard-only, gated at its own ~1100px threshold,
+   and not persisted, so a reload lands back on the daily buttons. Someone who
+   never presses `w` cannot reach it, which is why it needs no feature flag."
   (:require [uix.core :refer [defui defhook $ use-state use-effect use-callback]]
             [app.core.store :as core-store]
             [app.date-utils :refer [iso-date iso-week week-parity]]
@@ -117,7 +119,15 @@
    a dated toggle. `next-done-through` already takes the date it is asked about,
    so marking at D sets Done-through to D and unmarking at D rolls back to the
    Occurrence before D — no new store operation beyond dropping the key when
-   there is no earlier Occurrence."
+   there is no earlier Occurrence.
+
+   INVARIANT — the grid must stay a takeover. This creates a *second* store atom
+   over the same localStorage keys as `core.store`. It is correct only because
+   the shell unmounts `surfaces` while the grid is up, so exactly one of the two
+   is ever alive and handoff happens through localStorage. Nothing enforces
+   that. The day this face becomes a pane beside the day face instead of
+   replacing it, the two stores diverge silently — so at that point hoist
+   `use-store` into the shell and hand both faces the same store."
   [today schedule category-keys]
   (let [[st] (use-state #(store/create (read-initial)))
         snapshot (store/use-subscribe st)]

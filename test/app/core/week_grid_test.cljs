@@ -1,7 +1,7 @@
-(ns app.core.week-grid-prototype-test
+(ns app.core.week-grid-test
   (:require [cljs.test :refer [deftest is testing]]
             [app.date-utils :refer [iso-date iso-week week-parity]]
-            [app.core.week-grid-prototype :as grid]))
+            [app.core.week-grid :as grid]))
 
 (defn- every-day-of [year]
   (take-while #(= year (.getFullYear %))
