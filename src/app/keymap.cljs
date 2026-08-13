@@ -20,6 +20,7 @@
    {:id :toggle-rare    :key "r" :group :actions :desc "Show or hide the Rare pane"}
    {:id :toggle-day     :key "d" :group :actions :desc "Show or hide the Day pane"}
    {:id :toggle-cleared :key "c" :group :actions :desc "Show or hide cleared categories"}
+   {:id :toggle-grid    :key "w" :group :actions :desc "Show or hide the Week grid"}
    {:id :toggle-timer   :key "g" :group :actions :desc "Start or stop the timer"}
    {:id :open-details   :key "Enter" :cap "↵" :group :actions :desc "Open details for the task under the cursor"}
    {:id :dismiss        :key "Escape" :cap "Esc" :group :general :desc "Dismiss the cursor"}
