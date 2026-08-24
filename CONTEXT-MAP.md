@@ -93,6 +93,12 @@ A specific dated instance of a **Task**, computed from its recurrence rule.
 Derived, never stored.
 _Avoid_: instance, entry, slot
 
+**Cleared**:
+A **Category** or **Surface** with nothing awaiting action — nothing **Current**
+on **Rare**, no undone **Occurrence** today on **Core**. Says nothing about what
+sits completed or upcoming underneath.
+_Avoid_: done, finished, empty, all clear, on top
+
 **Done-through**:
 The per-task **Occurrence** up to and including which a task counts as done —
 forward-looking *coverage*, not a "last done". One value per task, surviving the

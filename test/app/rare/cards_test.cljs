@@ -50,6 +50,15 @@
            (map :cat (cards/build-cards by-cat two-plus-categories {} true)))
         "completed-only and upcoming-only categories reappear when cleared is shown")))
 
+(deftest build-cards-yields-nothing-when-every-category-is-cleared
+  (let [by-cat {:digital   [{:key "d" :sort-key 1 :done? true}]
+                :household [{:key "u" :sort-key 1 :upcoming? true}]}]
+    (is (empty? (cards/build-cards by-cat two-categories {} false))
+        "the Surface is Cleared when no category has anything Current")
+    (is (= [:digital :household]
+           (map :cat (cards/build-cards by-cat two-categories {} true)))
+        "showing cleared brings the categories back, so the Surface is not Cleared")))
+
 (deftest build-cards-preserves-category-order
   (let [by-cat {:digital   [{:key "a" :sort-key 1}]
                 :household [{:key "b" :sort-key 1}]}

@@ -4,6 +4,7 @@
             [app.config :as config]
             [app.cursor :as cursor]
             [app.date-utils :refer [iso->date]]
+            [app.empty-state :as empty-state]
             [app.keybinding :refer [use-hotkey]]
             [app.keymap :as keymap]
             [app.link :as link]
@@ -273,15 +274,18 @@
                 #(when focused (set-details! focused)))
     (link/use-open-link focused)
     ($ :div {:class "flex flex-col gap-4"}
-       (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
-         ($ category-card {:key       (str cat)
-                           :label     label
-                           :completed completed :current current :upcoming upcoming
-                           :show-completed? show-completed? :show-upcoming? show-upcoming?
-                           :on-toggle toggle
-                           :on-open-details set-details!
-                           :cursor-key cursor-key
-                           :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
-                           :on-toggle-upcoming  #(set-expanded! (fn [m] (update-in m [cat :upcoming?] not)))}))
+       (if (empty? cards)
+         ($ :div {:class "px-1 py-2"}
+            ($ empty-state/view))
+         (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
+           ($ category-card {:key       (str cat)
+                             :label     label
+                             :completed completed :current current :upcoming upcoming
+                             :show-completed? show-completed? :show-upcoming? show-upcoming?
+                             :on-toggle toggle
+                             :on-open-details set-details!
+                             :cursor-key cursor-key
+                             :on-toggle-completed #(set-expanded! (fn [m] (update-in m [cat :completed?] not)))
+                             :on-toggle-upcoming  #(set-expanded! (fn [m] (update-in m [cat :upcoming?] not)))})))
        (when details
          ($ details-modal {:row details :on-close #(set-details! nil)})))))

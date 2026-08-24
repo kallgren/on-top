@@ -3,6 +3,7 @@
             [app.core.store :as store]
             [app.cursor :as cursor]
             [app.date-utils :as dates]
+            [app.empty-state :as empty-state]
             [app.link :as link]
             [app.schedule :as schedule]
             [cljs.reader :as reader]
@@ -45,10 +46,6 @@
                 :aria-hidden true
                 :style #js {:width "40px" :height "40px"}}
           ($ :path {:d "M5 9l7 7 7-7"})))))
-
-(defui empty-state []
-  ($ :p {:class "py-20 text-center text-[17px] font-medium italic text-muted tracking-wide text-inset"}
-     "You're on top :)"))
 
 (defui task-list [{:keys [categories by-category toggle cursor-id]}]
   (for [[cat label] categories
@@ -96,7 +93,7 @@
     ($ :<>
        ($ :div {:ref content-ref :class "flex w-full flex-col gap-4 px-1 py-2"}
           (if (empty? by-category)
-            ($ empty-state)
+            ($ empty-state/view)
             ($ task-list {:categories categories :by-category by-category
                           :toggle toggle :cursor-id cursor-id})))
        ($ scroll-cue {:show? more?}))))

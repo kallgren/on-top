@@ -4,7 +4,7 @@ The slower-upkeep surface — _posture: when you can_. Maintenance chores on a
 monthly-to-yearly cadence, shown as category cards with current / upcoming /
 missed rows, plus a **Due** treatment for the few with real deadlines. See
 [CONTEXT-MAP.md](../../../CONTEXT-MAP.md) for the shared language (Task, Category,
-Schedule, Occurrence, Done-through).
+Schedule, Occurrence, Cleared, Done-through).
 
 ## Language
 
