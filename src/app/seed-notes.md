@@ -12,10 +12,14 @@ lines beneath.
 
 # Gmail inbox `gmail`
 
+[link]: https://mail.google.com/
+
 Two-minute rule: reply, archive, or turn it into a task — then it leaves the inbox.
 Anything bigger becomes a Todoist task; don't let it live in here.
 
 # Todoist inbox `todoist`
+
+[link]: https://app.todoist.com/app/inbox
 
 Every loose item gets a project and a date, or it gets deleted.
 No-action keepers go to Someday, not back on the list.
@@ -66,6 +70,8 @@ Eject cleanly and check the last-backup date actually moved.
 
 # Review subscriptions `review-subs`
 
+[link]: https://play.google.com/store/account/subscriptions
+
 Bank statement, not memory. Cancel anything unused since the last review.
 Watch for free trials that have quietly rolled into paid.
 
@@ -85,6 +91,8 @@ Registrar is Namecheap; the card on file expires before the domain does.
 Renew for two years and confirm auto-renew is still on.
 
 # File the tax return `file-tax-return`
+
+[link]: https://www.skatteverket.se/
 
 # Put out the recycling `put-out-recycling`
 

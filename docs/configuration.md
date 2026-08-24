@@ -59,7 +59,7 @@ A link points at wherever a task's real instructions live — a note in your not
 Two-minute rule: reply, archive, or turn it into a task.
 ```
 
-Press <kbd>o</kbd> with the keyboard cursor on that task to open it. Nothing in the app shows the link or hints that one exists, and a task without one does nothing when you press the key. Any scheme works — `https:`, or a custom one like `upnote://` that opens a desktop app — except those that execute script.
+Press <kbd>o</kbd> with the keyboard cursor on that task to open it; a task without one does nothing when you press the key. On Rare, a task carrying a link wears a small ↗ mark beside the note mark, and its details window shows the URL — as a clickable link when it's openable, as plain text when it isn't, so a malformed one is visible rather than silently dead. Core shows nothing either way: its buttons stay bare. Any scheme works — `https:`, or a custom one like `upnote://` that opens a desktop app — except those that execute script.
 
 ## Completion sync (Supabase)
 

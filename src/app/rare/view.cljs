@@ -71,8 +71,31 @@
         ($ :line {:x1 12 :y1 11 :x2 12 :y2 16})
         ($ :line {:x1 12 :y1 7.5 :x2 12 :y2 7.5}))))
 
+(defui link-marker []
+  ($ :span {:aria-hidden true
+            :class "shrink-0 flex h-5 w-5 items-center justify-center text-heading/35"}
+     ($ :svg {:viewBox "0 0 24 24" :class "h-5 w-5" :fill "none" :stroke "currentColor"
+              :stroke-width 2 :stroke-linecap "round" :stroke-linejoin "round"}
+        ($ :path {:d "M14 5h5v5"})
+        ($ :line {:x1 19 :y1 5 :x2 11 :y2 13})
+        ($ :path {:d "M18 14.5V19a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h4.5"}))))
+
+(defui markers [{:keys [note link]}]
+  (when (or note link)
+    ($ :div {:class "shrink-0 flex items-center gap-1"}
+       (when link ($ link-marker))
+       (when note ($ note-marker)))))
+
+(defui modal-link [{:keys [link]}]
+  ($ :div {:class "mt-4"}
+     (if-let [url (link/openable link)]
+       ($ :a {:href url :target "_blank" :rel "noopener"
+              :class "break-all text-[14px] font-medium text-heading underline underline-offset-2"}
+          url)
+       ($ :p {:class "break-all text-[14px] text-muted"} link))))
+
 (defui details-modal [{:keys [row on-close]}]
-  (let [{:keys [name note]} row]
+  (let [{:keys [name note link]} row]
     ($ modal/shell
        {:title name
         :on-close on-close
@@ -80,7 +103,9 @@
         :body ($ :<>
                  ($ :h2 {:class "text-[20px] font-bold text-label first-letter:uppercase"} name)
                  (when note
-                   ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note)))})))
+                   ($ :p {:class "mt-3 whitespace-pre-line text-[15px] leading-relaxed text-label"} note))
+                 (when link
+                   ($ modal-link {:link link})))})))
 
 (defui due-text [{:keys [due]}]
   ($ :span {:class "text-[12px] font-semibold uppercase text-red-500"} due))
@@ -97,7 +122,7 @@
      name))
 
 (defui task-row-mobile [{:keys [row on-toggle]}]
-  (let [{:keys [name note freq display-iso due-label done? missed]} row
+  (let [{:keys [name note link freq display-iso due-label done? missed]} row
         {:keys [rel full today-or-yesterday?]} (date-display display-iso)
         date-text (if today-or-yesterday? rel (str full " (" rel ")"))]
     ($ :div {:class "flex items-start gap-3"}
@@ -108,7 +133,7 @@
                 (when (pos? missed) ($ missed-stamp {:missed missed}))
                 ($ task-name {:name name :done? done? :class "min-w-0"}))
              ($ :div {:class "flex-1"})
-             (when note ($ note-marker)))
+             ($ markers {:note note :link link}))
           ($ :div {:class "flex items-center gap-2"}
              ($ :div {:class "flex min-w-0 flex-1 items-center gap-2"}
                 ($ :span {:class "text-[13px] font-semibold text-muted"} date-text)
@@ -116,7 +141,7 @@
              ($ freq-badge {:freq freq}))))))
 
 (defui task-row-desktop [{:keys [row on-toggle at-cursor?]}]
-  (let [{:keys [name note freq display-iso due-label done? missed]} row
+  (let [{:keys [name note link freq display-iso due-label done? missed]} row
         {:keys [rel full today-or-yesterday?]} (date-display display-iso)]
     ($ :div {:class "flex w-full items-center gap-3"}
        ($ round-checkbox {:checked? done?
@@ -129,7 +154,7 @@
          ($ :span {:class "text-[13px] font-semibold text-muted"} rel))
        (when due-label ($ due-text {:due due-label}))
        ($ :div {:class "flex-1"})
-       (when note ($ note-marker))
+       ($ markers {:note note :link link})
        (when (or done? (not today-or-yesterday?))
          ($ :span {:class "text-[13px] font-semibold tabular-nums text-muted"} full))
        ($ freq-badge {:freq freq}))))
