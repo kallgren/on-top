@@ -1,14 +1,14 @@
 # Task notes format
 
-One global Markdown file gives every Core and Rare task its display **name** and
-optional **note** — one definition per task, keyed by **id** and shared across both
-surfaces. A name lives in exactly this one place, so reword it here without
-touching identity or Done-through; the binding is the id. Day is out of scope: its
-schedule keeps names inline and never consults this file.
+One global Markdown file gives every Core and Rare task its display **name**, an
+optional **note** and an optional **link** — one definition per task, keyed by
+**id** and shared across both surfaces. A name lives in exactly this one place, so
+reword it here without touching identity or Done-through; the binding is the id.
+Day is out of scope: its schedule keeps names inline and never consults this file.
 
 This is the one bespoke format in the product, and the canonical spec for how the
 notes file is parsed — the parser implements it, so keep the two in sync. For what
-the terms mean (Task, Task id, Notes file, Note), see
+the terms mean (Task, Task id, Notes file, Note, Link), see
 [CONTEXT-MAP.md](../CONTEXT-MAP.md).
 
 ## Grammar
@@ -18,12 +18,17 @@ Applied after the input is normalised (CRLF → LF, leading BOM stripped).
 ```ebnf
 notes        = preamble , { definition } ;
 preamble     = { body-line } ;                  (* lines before the first heading — ignored *)
-definition   = heading-line , { body-line } ;   (* body runs to the next heading-line or EOF *)
+definition   = heading-line , { body-line | link-line } ;
+                                                (* body runs to the next heading-line or EOF *)
 
 heading-line = opt-ws , "#" , ws , heading-text , "\n" ;
 heading-text = ? text containing ≥1 code-span ? ;   (* id = LAST span; name = remainder, trimmed *)
 code-span    = "`" , { char - "`" } , "`" ;
 id           = lower , { lower | digit | "-" } ;    (* the span's contents must match this *)
+
+link-line    = indent , "[link]" , ":" , opt-ws , link-url , opt-ws , "\n" ;
+link-url     = url | ( "<" , url , ">" ) ;      (* url = one or more non-space, non-angle chars *)
+indent       = [ " " ] , [ " " ] , [ " " ] ;    (* a fourth space = indented code, not a definition *)
 
 opt-ws = { " " | "\t" } ;  ws = ( " " | "\t" ) , { " " | "\t" } ;
 lower  = "a".."z" ;  digit = "0".."9" ;
@@ -49,9 +54,28 @@ The grammar is a skeleton; these rules pin down what it can't express.
    `##` subheadings and fenced blocks all preserved. An empty or whitespace-only
    body means the task has no note.
 
-4. **Join.** A definition attaches to the task(s) whose id matches, on Core or
+4. **link = a `[link]:` line's URL**, taken out of the body so it never lands in
+   the note. This is an ordinary Markdown reference definition — the same
+   notation the file already renders under, rather than a second invented one.
+   The label is matched case-insensitively (`[link]`, `[Link]`, `[LINK]`), the URL
+   may be wrapped in `<…>`, and a `[link]:` line inside a code fence — or indented
+   four spaces — is ordinary body like any other code content. A reference
+   definition under any other label (`[docs]: …`) is left in the note untouched.
+
+   The line may sit anywhere in the body, but **put a blank line above it**: a
+   reference definition cannot interrupt a paragraph, so one written directly
+   under a line of prose is a lazy continuation of that paragraph and stays in the
+   note as literal text. When a removed line leaves a blank line directly beneath
+   it, that blank goes too, so the note keeps no hole where the link was.
+
+5. **A link must carry a scheme**, and not one that executes script
+   (`javascript:`, `data:`, `vbscript:`) — a remote notes file is untrusted input,
+   and a scheme-less value would resolve against the app's own origin. Whitespace
+   inside a URL refuses it outright. A refused link reads as no link at all.
+
+6. **Join.** A definition attaches to the task(s) whose id matches, on Core or
    Rare. A scheduled id with no definition takes its id as its name and has no
-   note.
+   note or link.
 
 ## id
 
@@ -71,6 +95,9 @@ warns and degrades, the product running on id-fallback names.
 | Heading with no / malformed / empty id | Warn | Skip that definition |
 | More than one code span in heading | Silent | Last = id, the rest = name |
 | Duplicate id | Warn | Last one wins |
+| More than one `[link]:` line in a definition | Warn | First one wins, all stripped from the note |
+| `[link]:` with no URL | Silent | Not a link-line; stays in the note verbatim |
+| Link with no scheme, a script-bearing one, or interior whitespace | Silent | Refused; the task reads as having no link |
 | Definition id in no Core/Rare schedule (orphan) | Silent¹ | Ignore the definition |
 | Scheduled id with no definition | Silent | name = id, no note |
 | Empty notes file / no headings | Silent | All names = id |
@@ -86,6 +113,9 @@ point, a cost not yet worth paying.
 A title or comment up here is preamble — ignored.
 
 # Gmail inbox `gmail`
+
+[link]: upnote://x/9f3c1a
+
 Alternativ:
 - Snooze eller Todoist om jag ska agera senare
 
@@ -106,7 +136,8 @@ make build
 # `downloads`
 ```
 
-Parses to: `gmail` (name "Gmail inbox", two-line note), `calendar` (name
-"Calendar (2w/4w)", note with a `## Var` subheading), `deploy` (name "Deploy
+Parses to: `gmail` (name "Gmail inbox", link `upnote://x/9f3c1a`, two-line note
+with no trace of the link line), `calendar` (name "Calendar (2w/4w)", note with a
+`## Var` subheading), `deploy` (name "Deploy
 script", note containing a code block whose `# build first` line is preserved),
 and `downloads` (name falls back to "downloads", no note).

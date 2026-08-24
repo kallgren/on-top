@@ -2,8 +2,9 @@
   (:require [cljs.test :refer [deftest is testing]]
             [app.keybinding :as kb]))
 
-(defn- event [& {:keys [key meta ctrl alt]}]
-  #js {:key key :metaKey (boolean meta) :ctrlKey (boolean ctrl) :altKey (boolean alt)})
+(defn- event [& {:keys [key meta ctrl alt repeat]}]
+  #js {:key key :metaKey (boolean meta) :ctrlKey (boolean ctrl) :altKey (boolean alt)
+       :repeat (boolean repeat)})
 
 (deftest hotkey-fires-on-bare-key
   (is (kb/hotkey? (event :key "r") "r" nil false)))
@@ -24,6 +25,16 @@
     (is (not (kb/hotkey? (event :key "r") "r" #js {:isContentEditable true} false))))
   (testing "a non-editable element does not suppress"
     (is (kb/hotkey? (event :key "r") "r" #js {:tagName "DIV"} false))))
+
+(deftest hotkey-repeats-by-default
+  (testing "holding j to walk the list is a feature"
+    (is (kb/hotkey? (event :key "j" :repeat true) "j" nil false))))
+
+(deftest hotkey-drops-auto-repeat-when-the-binding-refuses-it
+  (testing "holding the key must not fire an action a dozen times"
+    (is (not (kb/hotkey? (event :key "o" :repeat true) "o" nil false false))))
+  (testing "the deliberate first press still fires"
+    (is (kb/hotkey? (event :key "o") "o" nil false false))))
 
 (deftest hotkey-suppressed-while-an-overlay-captures-keys
   (testing "the shortcuts overlay (or any key-capturing layer) silences app keys"

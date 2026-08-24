@@ -6,6 +6,7 @@
             [app.date-utils :refer [iso->date]]
             [app.keybinding :refer [use-hotkey]]
             [app.keymap :as keymap]
+            [app.link :as link]
             [app.modal :as modal]
             [app.rare.cards :as cards]
             [app.rare.store :as store]
@@ -245,6 +246,7 @@
         cursor-key     (:key focused)]
     (use-hotkey (keymap/key-of :open-details)
                 #(when focused (set-details! focused)))
+    (link/use-open-link focused)
     ($ :div {:class "flex flex-col gap-4"}
        (for [{:keys [cat label completed current upcoming show-completed? show-upcoming?]} cards]
          ($ category-card {:key       (str cat)

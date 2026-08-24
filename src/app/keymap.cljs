@@ -22,6 +22,7 @@
    {:id :toggle-cleared :key "c" :group :actions :desc "Show or hide cleared categories"}
    {:id :toggle-timer   :key "g" :group :actions :desc "Start or stop the timer"}
    {:id :open-details   :key "Enter" :cap "↵" :group :actions :desc "Open details for the task under the cursor"}
+   {:id :open-link      :key "o" :group :actions :desc "Open the link for the task under the cursor"}
    {:id :dismiss        :key "Escape" :cap "Esc" :group :general :desc "Dismiss the cursor"}
    {:id :help           :key "?" :group :general :desc "Show this shortcuts list"}])
 

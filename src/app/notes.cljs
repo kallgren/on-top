@@ -1,8 +1,9 @@
 (ns app.notes
   "The Notes file: one global Markdown document holding every Core/Rare task's
-   display name and optional note, keyed by task id. `parse` turns the Markdown
-   into an `id → {:name :note}` lookup per docs/notes-format.md; the rest mirrors
-   app.schedule — a remote gist override (SWR) over a compiled-in seed floor.
+   display name and optional note and link, keyed by task id. `parse` turns the
+   Markdown into an `id → {:name :note :link}` lookup per docs/notes-format.md;
+   the rest mirrors app.schedule — a remote gist override (SWR) over a
+   compiled-in seed floor.
    Enrichment, never structure: it warns and degrades, never hard-fails. See
    docs/adr/0005."
   (:require [clojure.string :as str]))
@@ -46,6 +47,32 @@
       {:id nil})
     {:id nil}))
 
+;; Three leading spaces, not four: a fourth would make the line an indented code
+;; block, which is content, not a definition.
+(def ^:private link-re
+  (js/RegExp. "^ {0,3}\\[link\\]:[ \\t]*<?([^\\s<>]+)>?[ \\t]*$" "i"))
+
+(defn- link-line [line]
+  (second (.exec link-re line)))
+
+(defn- split-link
+  "A definition's `[link body]`: the first `[link]:` line's URL, and the body with
+   every such line — and any blank line directly under one — removed."
+  [body]
+  (loop [lines body, in-fence? false, link nil, kept []]
+    (if-let [line (first lines)]
+      (let [fence? (fence-line? line)
+            url    (when-not (or in-fence? fence?) (link-line line))
+            rest'  (cond-> (rest lines)
+                     (and url (str/blank? (second lines))) rest)]
+        (when (and url link)
+          (js/console.warn "on-top: notes — extra link definition ignored —" line))
+        (recur rest'
+               (if fence? (not in-fence?) in-fence?)
+               (or link url)
+               (if url kept (conj kept line))))
+      [link kept])))
+
 (defn- note-of
   "The note for a definition's body lines: outer blank lines stripped, interior
    left verbatim. nil when the body is empty or all whitespace."
@@ -63,13 +90,16 @@
     (if (nil? id)
       (do (js/console.warn "on-top: notes — skipping heading with no valid id —" heading)
           m)
-      (let [note (note-of body)]
+      (let [[link body] (split-link body)
+            note (note-of body)]
         (when (contains? m id)
           (js/console.warn "on-top: notes — duplicate id, last wins —" id))
-        (assoc m id (cond-> {:name name} note (assoc :note note)))))))
+        (assoc m id (cond-> {:name name}
+                      link (assoc :link link)
+                      note (assoc :note note)))))))
 
 (defn parse
-  "Parse a Notes-file Markdown string into `{id {:name :note}}`. Diagnostics warn
+  "Parse a Notes-file Markdown string into `{id {:name :note :link}}`. Diagnostics warn
    and degrade per docs/notes-format.md; never throws."
   [s]
   (let [lines (vec (.split (normalize s) "\n"))]
@@ -120,16 +150,21 @@
   [notes id]
   (get-in notes [id :note]))
 
+(defn link-for [notes id]
+  (get-in notes [id :link]))
+
 (defn enrich
-  "Join display names — and any Note — from the Notes lookup onto id-only tasks
-   (or rows) by id. `:name` always lands (id-fallback); `:note` lands only when
-   the id has one, staying absent otherwise."
+  "Join display names — and any Note or Link — from the Notes lookup onto id-only
+   tasks (or rows) by id. `:name` always lands (id-fallback); `:note` and `:link`
+   land only when the id has one, staying absent otherwise."
   [notes tasks]
   (map (fn [task]
          (let [id   (:id task)
-               note (note-for notes id)]
+               note (note-for notes id)
+               link (link-for notes id)]
            (cond-> (assoc task :name (name-for notes id))
-             note (assoc :note note))))
+             note (assoc :note note)
+             link (assoc :link link))))
        tasks))
 
 ;; ── Fetch ─────────────────────────────────────────────────────────────────────

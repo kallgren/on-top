@@ -1,5 +1,5 @@
 (ns app.notes-test
-  (:require [cljs.test :refer [deftest is]]
+  (:require [cljs.test :refer [deftest is testing]]
             [app.notes :as notes]))
 
 (defn- with-captured-warnings
@@ -106,6 +106,81 @@
                      (is (= {"id" {:name "a `b`"}} (notes/parse "# a `b` `id`\n")))))]
     (is (empty? warnings))))
 
+;; ── Parsing: links ───────────────────────────────────────────────────────────
+
+(deftest parse-reads-a-link-definition-and-keeps-it-out-of-the-note
+  (is (= {"gmail" {:name "Gmail inbox"
+                   :link "upnote://x/abc"
+                   :note "Two-minute rule."}}
+         (notes/parse "# Gmail inbox `gmail`\n\n[link]: upnote://x/abc\n\nTwo-minute rule.\n"))))
+
+(deftest parse-leaves-a-link-only-body-note-less
+  (is (= {"gmail" {:name "Gmail inbox" :link "upnote://x/abc"}}
+         (notes/parse "# Gmail inbox `gmail`\n\n[link]: upnote://x/abc\n"))))
+
+(deftest parse-reads-a-link-definition-anywhere-in-the-body
+  (is (= {"gmail" {:name "Gmail inbox" :link "upnote://x/abc" :note "A note."}}
+         (notes/parse "# Gmail inbox `gmail`\nA note.\n\n[link]: upnote://x/abc\n"))))
+
+(deftest parse-accepts-an-angle-bracketed-link
+  (is (= {"gmail" {:name "Gmail inbox" :link "upnote://x/abc"}}
+         (notes/parse "# Gmail inbox `gmail`\n[link]: <upnote://x/abc>\n"))))
+
+(deftest parse-matches-the-link-label-case-insensitively
+  (is (= {"gmail" {:name "Gmail inbox" :link "upnote://x/abc"}}
+         (notes/parse "# Gmail inbox `gmail`\n[Link]: upnote://x/abc\n")))
+  (is (= {"gmail" {:name "Gmail inbox" :link "upnote://x/abc"}}
+         (notes/parse "# Gmail inbox `gmail`\n[LINK]: upnote://x/abc\n"))))
+
+(deftest parse-leaves-the-link-absent-when-the-body-has-none
+  (let [{:strs [gmail]} (notes/parse "# Gmail inbox `gmail`\nA note.\n")]
+    (is (= {:name "Gmail inbox" :note "A note."} gmail))
+    (is (not (contains? gmail :link)))))
+
+(deftest parse-keeps-a-link-definition-inside-a-fence-in-the-note
+  (testing "fence-awareness matches headings: fenced content is verbatim body"
+    (let [{:strs [deploy]} (notes/parse (str "# Deploy `deploy`\n"
+                                             "Sample:\n\n```md\n[link]: upnote://x/abc\n```\n"))]
+      (is (not (contains? deploy :link)))
+      (is (= "Sample:\n\n```md\n[link]: upnote://x/abc\n```" (:note deploy))))))
+
+(deftest parse-leaves-no-hole-where-the-link-line-was
+  (testing "the Link is invisible in the note, and so is its absence"
+    (is (= "First para.\n\nSecond para."
+           (:note (get (notes/parse (str "# X `x`\n"
+                                         "First para.\n\n[link]: upnote://x/abc\n\nSecond para.\n"))
+                       "x"))))
+    (is (= "A note."
+           (:note (get (notes/parse "# X `x`\n[link]: upnote://x/abc\nA note.\n") "x"))))))
+
+(deftest parse-ignores-a-link-line-in-an-indented-code-block
+  (testing "four spaces makes it content, per CommonMark"
+    (let [{:strs [x]} (notes/parse "# X `x`\nSample:\n\n    [link]: upnote://x/abc\n")]
+      (is (not (contains? x :link)))
+      (is (= "Sample:\n\n    [link]: upnote://x/abc" (:note x)))))
+  (testing "up to three spaces is still a definition"
+    (is (= "upnote://x/abc"
+           (:link (get (notes/parse "# X `x`\n   [link]: upnote://x/abc\n") "x"))))))
+
+(deftest parse-keeps-a-non-link-reference-definition-in-the-note
+  (let [{:strs [gmail]} (notes/parse "# Gmail inbox `gmail`\n[docs]: https://example.com\n")]
+    (is (not (contains? gmail :link)))
+    (is (= "[docs]: https://example.com" (:note gmail)))))
+
+(deftest parse-first-link-wins-on-a-duplicate-with-a-warning
+  (let [warnings (with-captured-warnings
+                   (fn []
+                     (is (= {"gmail" {:name "Gmail inbox" :link "upnote://x/first"}}
+                            (notes/parse (str "# Gmail inbox `gmail`\n"
+                                              "[link]: upnote://x/first\n"
+                                              "[link]: upnote://x/second\n"))))))]
+    (is (= 1 (count warnings)))))
+
+(deftest parse-ignores-an-empty-link-definition
+  (let [{:strs [gmail]} (notes/parse "# Gmail inbox `gmail`\n[link]:\n")]
+    (is (not (contains? gmail :link)))
+    (is (= "[link]:" (:note gmail)))))
+
 ;; ── Enrichment ───────────────────────────────────────────────────────────────
 
 (deftest name-for-looks-up-a-known-id
@@ -142,6 +217,27 @@
   (is (= [{:category :household :id "vacuum" :name "Vacuum" :note "Under the bed too"}]
          (notes/enrich {"vacuum" {:name "Vacuum" :note "Under the bed too"}}
                        [{:category :household :id "vacuum"}]))))
+
+(deftest link-for-looks-up-a-known-link
+  (is (= "upnote://x/abc"
+         (notes/link-for {"gmail" {:name "Gmail inbox" :link "upnote://x/abc"}} "gmail"))))
+
+(deftest link-for-is-nil-for-an-unknown-id-or-a-link-less-definition
+  (is (nil? (notes/link-for {} "gmail")))
+  (is (nil? (notes/link-for {"gmail" {:name "Gmail inbox"}} "gmail"))))
+
+(deftest enrich-carries-the-link-when-the-id-has-one
+  (is (= [{:category :household :id "vacuum" :name "Vacuum" :link "upnote://x/abc"}]
+         (notes/enrich {"vacuum" {:name "Vacuum" :link "upnote://x/abc"}}
+                       [{:category :household :id "vacuum"}]))))
+
+(deftest enrich-leaves-the-link-absent-when-the-id-has-none
+  (let [[link-less unknown]
+        (notes/enrich {"gmail" {:name "Gmail inbox"}}
+                      [{:category :digital :id "gmail"}
+                       {:category :digital :id "unknown"}])]
+    (is (not (contains? link-less :link)))
+    (is (not (contains? unknown :link)))))
 
 (deftest enrich-leaves-the-note-absent-when-the-id-has-none
   (let [[note-less unknown]

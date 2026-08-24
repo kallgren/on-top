@@ -10,6 +10,7 @@
     (is (= "c" (keymap/key-of :toggle-cleared)))
     (is (= "g" (keymap/key-of :toggle-timer)))
     (is (= "Enter" (keymap/key-of :open-details)))
+    (is (= "o" (keymap/key-of :open-link)))
     (is (= "?" (keymap/key-of :help)))
     (is (= "Escape" (keymap/key-of :dismiss)))))
 

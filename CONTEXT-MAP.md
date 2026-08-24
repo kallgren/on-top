@@ -51,8 +51,8 @@ on top (see the surface contexts above).
 **Task**:
 A recurring chore with a stable **task id**, a **Category**, and a **recurrence
 rule** — a template, not an **Occurrence**. On **Core** and **Rare** its display
-**name** and optional **Note** come from the **Notes file**, keyed by task id; on
-**Day** the name is carried inline in the schedule.
+**name** and optional **Note** and **Link** come from the **Notes file**, keyed by
+task id; on **Day** the name is carried inline in the schedule.
 _Avoid_: item, todo, chore (in code), reminder
 
 **Task id**:
@@ -75,7 +75,7 @@ _Avoid_: calendar, plan, config; holding display names (Core/Rare)
 
 **Notes file**:
 The single Markdown document giving **Core** and **Rare** tasks their display
-**name** and optional **Note**, keyed by **task id**. Format:
+**name** and optional **Note** and **Link**, keyed by **task id**. Format:
 [docs/notes-format.md](docs/notes-format.md).
 _Avoid_: descriptions file, glossary, schedule
 
@@ -83,6 +83,10 @@ _Avoid_: descriptions file, glossary, schedule
 The optional multi-line Markdown prose attached to a task, supplied via the
 **Notes file**.
 _Avoid_: description, comment, blurb
+
+**Link**:
+The optional external URL attached to a task, supplied via the **Notes file**.
+_Avoid_: url (in prose), bookmark, href, attachment
 
 **Occurrence**:
 A specific dated instance of a **Task**, computed from its recurrence rule.

@@ -47,7 +47,19 @@ The design is recorded in [ADR 0005](adr/0005-remote-schedule-override-via-gist.
 
 ## Notes file
 
-Core and Rare schedules carry only ids; each task's display **name** and optional **note** live in one global Markdown notes file, shared across both surfaces (Day keeps its names inline). Override the seed (`src/app/seed-notes.md`) by adding a `notes.md` file to the same [`gistUrl`](#custom-schedule) gist. For the authoring format, see [notes-format.md](notes-format.md).
+Core and Rare schedules carry only ids; each task's display **name**, its optional **note** and its optional **link** live in one global Markdown notes file, shared across both surfaces (Day keeps its names inline). Override the seed (`src/app/seed-notes.md`) by adding a `notes.md` file to the same [`gistUrl`](#custom-schedule) gist. For the authoring format, see [notes-format.md](notes-format.md).
+
+A link points at wherever a task's real instructions live — a note in your notes app, a doc, a dashboard. Give a task one by adding a `[link]:` line under its heading, with a blank line above it:
+
+```markdown
+# Gmail inbox `gmail`
+
+[link]: upnote://x/9f3c1a
+
+Two-minute rule: reply, archive, or turn it into a task.
+```
+
+Press <kbd>o</kbd> with the keyboard cursor on that task to open it. Nothing in the app shows the link or hints that one exists, and a task without one does nothing when you press the key. Any scheme works — `https:`, or a custom one like `upnote://` that opens a desktop app — except those that execute script.
 
 ## Completion sync (Supabase)
 

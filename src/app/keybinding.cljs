@@ -7,24 +7,27 @@
      (or (#{"INPUT" "TEXTAREA"} (.-tagName el))
          (.-isContentEditable el)))))
 
-(defn hotkey? [e key active-el capturing?]
-  (and (= key (.-key e))
-       (not (.-metaKey e))
-       (not (.-ctrlKey e))
-       (not (.-altKey e))
-       (not (editable? active-el))
-       (not capturing?)))
+(defn hotkey?
+  ([e key active-el capturing?] (hotkey? e key active-el capturing? true))
+  ([e key active-el capturing? repeats?]
+   (and (= key (.-key e))
+        (not (.-metaKey e))
+        (not (.-ctrlKey e))
+        (not (.-altKey e))
+        (not (editable? active-el))
+        (not capturing?)
+        (or repeats? (not (.-repeat e))))))
 
 (defn- capturing-keys? []
   (boolean (.querySelector js/document "[data-capture-keys]")))
 
-(defhook use-hotkey [key on-press]
+(defhook use-hotkey [key on-press & [{:keys [repeats?] :or {repeats? true}}]]
   (let [press (use-effect-event on-press)]
     (use-effect
      (fn []
        (let [on-key (fn [e]
-                      (when (hotkey? e key js/document.activeElement (capturing-keys?))
+                      (when (hotkey? e key js/document.activeElement (capturing-keys?) repeats?)
                         (press)))]
          (.addEventListener js/window "keydown" on-key)
          #(.removeEventListener js/window "keydown" on-key)))
-     [key])))
+     [key repeats?])))
